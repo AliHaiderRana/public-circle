@@ -47,9 +47,9 @@ const RolesMembersPage = lazy(() => import('@/pages/dashboard/configurations/rol
 const NewEmailPage = lazy(() => import('@/pages/dashboard/configurations/new-email'));
 
 // Logs pages
-const CampaignLogsPage = lazy(() => import('@/pages/dashboard/logs/list.tsx'));
-const CampaignLogDetailsPage = lazy(() => import('@/pages/dashboard/logs/details.tsx'));
-const MessageLogsPage = lazy(() => import('@/pages/dashboard/logs/messages.tsx'));
+const CampaignLogsPage = lazy(() => import('@/pages/dashboard/logs/list'));
+const CampaignLogDetailsPage = lazy(() => import('@/pages/dashboard/logs/details'));
+const MessageLogsPage = lazy(() => import('@/pages/dashboard/logs/messages'));
 
 // Settings pages
 const SettingsPage = lazy(() => import('@/pages/dashboard/settings'));
