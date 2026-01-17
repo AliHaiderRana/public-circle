@@ -44,8 +44,8 @@ const campaignSchema = z.object({
   runMode: z.enum(['IMMEDIATE', 'SCHEDULED']),
   frequency: z.enum(['ONE_TIME', 'RECURRING']),
   runSchedule: z.string().optional(),
-  isRecurring: z.boolean().default(false),
-  isOnGoing: z.boolean().default(false),
+  isRecurring: z.boolean(),
+  isOnGoing: z.boolean(),
 });
 
 type CampaignFormValues = z.infer<typeof campaignSchema>;

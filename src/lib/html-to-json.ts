@@ -162,8 +162,8 @@ function createRow(unlayerJson: any, rowEl: Element, extractedBgColor = '') {
 
   return {
     id: generateUniqueId(),
-    cells: [],
-    columns: [],
+    cells: [] as any[],
+    columns: [] as any[],
     values: {
       backgroundColor: 'transparent',
       columnsBackgroundColor: bgColor || '',

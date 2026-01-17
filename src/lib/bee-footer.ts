@@ -106,7 +106,6 @@ export function createBeeFooterRows(options: FooterOptions = {}) {
         hideMobile: false,
         _meta: { htmlID: 'u_row_footer_desktop', htmlClassNames: 'u_row' },
         _override: { mobile: { hideMobile: true } },
-        hideable: false,
         noStackMobile: false,
         locked: true,
         selectable: false,

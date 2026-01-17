@@ -137,7 +137,8 @@ export function useBeeEditor({
           onAutoSave: (jsonFile: any) => {
             onAutoSave?.(jsonFile);
           },
-          onError: (errorMessage: string) => {
+          onError: (error: any) => {
+            const errorMessage = typeof error === 'string' ? error : error?.message || 'Unknown error';
             // Only show non-authentication errors (auth errors are handled in token fetch)
             if (!errorMessage.toLowerCase().includes('authentication') && 
                 !errorMessage.toLowerCase().includes('credentials')) {

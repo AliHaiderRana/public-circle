@@ -6,7 +6,7 @@
 export interface BeeEditorConfig {
   uid: string;
   container: string;
-  autosave: number | false;
+  autosave: number | undefined;
   language: string;
   trackChanges: boolean;
   preventClose: boolean;
@@ -25,7 +25,7 @@ export interface BeeEditorCallbacks {
   onAutoSave?: (jsonFile: any) => void;
   onSend?: (htmlFile: string) => void;
   onLoad?: (jsonFile: any) => void;
-  onError?: (errorMessage: string) => void;
+  onError?: (error: any) => void;
   onWarning?: (alertMessage: string) => void;
   uploadImage?: (data: any, done: (result: { progress: number; url: string }) => void) => Promise<void>;
   selectImage?: (data: any, done: (result: { url: string }) => void) => Promise<void>;
