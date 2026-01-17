@@ -47,12 +47,9 @@ const RolesMembersPage = lazy(() => import('@/pages/dashboard/configurations/rol
 const NewEmailPage = lazy(() => import('@/pages/dashboard/configurations/new-email'));
 
 // Logs pages
-// @ts-expect-error - Module resolution issue, files exist and export correctly
-const CampaignLogsPage = lazy(() => import('@/pages/dashboard/logs/list'));
-// @ts-expect-error - Module resolution issue, files exist and export correctly
-const CampaignLogDetailsPage = lazy(() => import('@/pages/dashboard/logs/details'));
-// @ts-expect-error - Module resolution issue, files exist and export correctly
-const MessageLogsPage = lazy(() => import('@/pages/dashboard/logs/messages'));
+const CampaignLogsPage = lazy(() => import('@/pages/dashboard/logs/list.tsx'));
+const CampaignLogDetailsPage = lazy(() => import('@/pages/dashboard/logs/details.tsx'));
+const MessageLogsPage = lazy(() => import('@/pages/dashboard/logs/messages.tsx'));
 
 // Settings pages
 const SettingsPage = lazy(() => import('@/pages/dashboard/settings'));
