@@ -667,23 +667,24 @@ export default function TemplateCreatePage() {
                   <Eye className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Preview</span>
                 </Button>
-              {isEditMode && (
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsSaveAs(true);
-                    void handleSubmit(onSubmit as any)();
-                  }}
-                  disabled={isSubmitting || isSaving}
-                >
+                {isEditMode && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsSaveAs(true);
+                      void handleSubmit(onSubmit as any)();
+                    }}
+                    disabled={isSubmitting || isSaving}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Save As
+                  </Button>
+                )}
+                <Button onClick={() => void handleSubmit(onSubmit as any)()} disabled={isSubmitting || isSaving}>
                   <Save className="mr-2 h-4 w-4" />
-                  Save As
+                  {isSaving ? 'Saving...' : isEditMode ? 'Update Template' : 'Save Template'}
                 </Button>
-              )}
-              <Button onClick={() => void handleSubmit(onSubmit as any)()} disabled={isSubmitting || isSaving}>
-                <Save className="mr-2 h-4 w-4" />
-                {isSaving ? 'Saving...' : isEditMode ? 'Update Template' : 'Save Template'}
-              </Button>
+              </div>
             </div>
           </div>
         </div>
