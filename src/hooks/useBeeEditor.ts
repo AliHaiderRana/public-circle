@@ -175,7 +175,7 @@ export function useBeeEditor({
         // Template will be loaded via the useEffect hook when editor is ready
         // This ensures we don't miss template updates that happen after initialization
         console.log('Initializing BeeFree editor (template will load when ready)');
-        beeEditor.start(config, null);
+        beeEditor.start(config, undefined);
         editorRef.current = beeEditor;
         setEditorInstance(beeEditor);
         

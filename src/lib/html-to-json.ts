@@ -493,13 +493,13 @@ export function convertHtmlToJson(html: string) {
   const doc = parser.parseFromString(html, 'text/html');
   const cssRules = parseStyleTagCSS(doc);
 
-  const unlayerJson = {
+  const unlayerJson: any = {
     counters: defaultCounters(),
     body: {
       id: generateUniqueId(),
-      rows: [],
-      headers: [],
-      footers: [],
+      rows: [] as any[],
+      headers: [] as any[],
+      footers: [] as any[],
       values: defaultBodyValues(doc, cssRules),
     },
     schemaVersion: 16,
