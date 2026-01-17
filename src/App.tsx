@@ -29,6 +29,7 @@ const CampaignEditPage = lazy(() => import('@/pages/dashboard/campaign/edit'));
 const TemplateListPage = lazy(() => import('@/pages/TemplateList'));
 const TemplateCreatePage = lazy(() => import('@/pages/TemplateCreate'));
 const SampleTemplatesPage = lazy(() => import('@/pages/dashboard/templates/sample'));
+const TemplateSelectPage = lazy(() => import('@/pages/dashboard/templates/template-select'));
 
 // Audience pages
 const FiltersPage = lazy(() => import('@/pages/dashboard/audience/filters'));
@@ -325,6 +326,16 @@ function App() {
                       <AuthGuard>
                         <DashboardLayout>
                           <SampleTemplatesPage />
+                        </DashboardLayout>
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/templates/select"
+                    element={
+                      <AuthGuard>
+                        <DashboardLayout>
+                          <TemplateSelectPage />
                         </DashboardLayout>
                       </AuthGuard>
                     }

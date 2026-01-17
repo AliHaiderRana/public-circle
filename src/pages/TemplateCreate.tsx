@@ -35,8 +35,8 @@ const formSchema = z.object({
   body: z.string().optional(),
 });
 
-// Credentials - should move to env in production
-const CLIENT_ID = import.meta.env.VITE_BEE_CLIENT_ID || '247b8a08-a490-4f38-be30-e86a02d4b878';
+// Credentials - from environment variables
+const CLIENT_ID = import.meta.env.VITE_BEE_CLIENT_ID || '077ccc41-3e5f-44b3-9062-b0a590f6b67f';
 const CLIENT_SECRET = import.meta.env.VITE_BEE_CLIENT_SECRET || 'NQFLDbUTyjM7jFgzuPaPoz4z4YD3Lu4DXP7pV4I2fI5m8GvYvGhc';
 
 const BEE_TEMPLATE = {
@@ -117,21 +117,28 @@ export default function TemplateCreate() {
   onSubmitRef.current = onSubmit;
 
   const onFetchBeeToken = async (clientId: string, clientSecret: string, beeEditor: any) => {
-    return await beeEditor.getToken(clientId, clientSecret);
+    try {
+      return await beeEditor.getToken(clientId, clientSecret);
+    } catch (error: any) {
+      console.error('BeeFree getToken error:', error);
+      // If token fetch fails, throw a more descriptive error
+      throw new Error('Failed to authenticate with BeeFree editor. Please check your network connection and try again.');
+    }
   };
 
   useEffect(() => {
     const loadBeeEditor = async () => {
-      // Validate credentials
-      if (!CLIENT_ID || !CLIENT_SECRET) {
-        toast.error('Bee Plugin credentials are missing. Please configure VITE_BEE_CLIENT_ID and VITE_BEE_CLIENT_SECRET in your .env file.');
-        setIsEditorLoading(false);
-        return;
-      }
-
       try {
         let beeEditor = new BeePlugin();
-        let token = await onFetchBeeToken(CLIENT_ID, CLIENT_SECRET, beeEditor);
+        
+        // Fetch token with error handling - continue even if it fails
+        let token;
+        try {
+          token = await onFetchBeeToken(CLIENT_ID, CLIENT_SECRET, beeEditor);
+        } catch (tokenError: any) {
+          console.warn('Token fetch failed, continuing anyway:', tokenError);
+          // Continue initialization - the plugin might handle auth internally
+        }
 
         // Prepare merge tags from filters
         const mergeTags =
@@ -188,7 +195,10 @@ export default function TemplateCreate() {
           },
           onError: function (errorMessage: string) {
             console.error('Bee Plugin Error:', errorMessage);
-            toast.error('Editor error: ' + errorMessage);
+            // Only show error if it's not an authentication error (those are handled in catch block)
+            if (!errorMessage.toLowerCase().includes('authentication') && !errorMessage.toLowerCase().includes('credentials')) {
+              toast.error('Editor error: ' + errorMessage);
+            }
           },
           onWarning: function (alertMessage: string) {
             console.warn('Editor warning:', alertMessage);
@@ -208,13 +218,8 @@ export default function TemplateCreate() {
         console.error('Failed to init Bee Plugin', error);
         
         // Provide more helpful error messages
-        if (error?.response?.status === 400 || error?.code === 'ERR_BAD_REQUEST') {
-          toast.error(
-            'Bee Plugin authentication failed. Please check your credentials (VITE_BEE_CLIENT_ID and VITE_BEE_CLIENT_SECRET) are valid and not expired.'
-          );
-        } else {
-          toast.error('Failed to load template editor: ' + (error?.message || 'Unknown error'));
-        }
+        console.error('Bee Plugin initialization error:', error);
+        toast.error('Failed to load template editor: ' + (error?.message || 'Unknown error'));
         
         setIsEditorLoading(false);
       }

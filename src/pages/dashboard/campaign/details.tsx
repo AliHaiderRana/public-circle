@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getCampaignById } from '@/actions/campaign';
 import { getMessageLogs } from '@/actions/logs';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,6 +79,9 @@ export default function CampaignDetailsPage() {
         .then(([campaignResponse, logsResponse]) => {
           if (campaignResponse?.data?.data) {
             setCampaign(campaignResponse.data.data);
+          } else {
+            // Handle case where campaign doesn't exist
+            setCampaign(null);
           }
           if (logsResponse?.data?.data) {
             const logs = Array.isArray(logsResponse.data.data)
@@ -90,14 +94,29 @@ export default function CampaignDetailsPage() {
             setCampaignLogs(logs.slice(0, 10)); // Show last 10 logs
           }
         })
-        .catch((error) => {
+        .catch((error: any) => {
           console.error('Error fetching campaign details:', error);
+          const errorMessage = error?.response?.data?.message || error?.message || 'Failed to load campaign';
+          
+          // Provide specific error messages
+          if (error?.response?.status === 404) {
+            toast.error('Campaign not found. It may have been deleted.');
+            setCampaign(null);
+            // Navigate back after a short delay
+            setTimeout(() => navigate(paths.dashboard.campaign.root), 2000);
+          } else if (error?.response?.status === 403) {
+            toast.error('You do not have permission to access this campaign.');
+            setTimeout(() => navigate(paths.dashboard.campaign.root), 2000);
+          } else {
+            toast.error(errorMessage);
+            setCampaign(null);
+          }
         })
         .finally(() => {
           setIsLoading(false);
         });
     }
-  }, [id]);
+  }, [id, navigate]);
 
   if (isLoading) {
     return (

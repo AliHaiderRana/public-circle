@@ -38,6 +38,7 @@ export const paths = {
       root: `${ROOTS.DASHBOARD}/templates`,
       create: `${ROOTS.DASHBOARD}/templates/template`,
       sample: `${ROOTS.DASHBOARD}/templates/sample`,
+      select: `${ROOTS.DASHBOARD}/templates/select`,
     },
     logs: {
       root: `${ROOTS.DASHBOARD}/logs/list`,

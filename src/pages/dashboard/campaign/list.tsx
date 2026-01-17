@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllCampaigns } from '@/actions/campaign';
 import { Button } from '@/components/ui/button';
@@ -61,34 +61,47 @@ export default function CampaignListPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [statusFilter, setStatusFilter] = useState<CampaignStatus>('all');
   const pageSize = 10;
 
-  const { allCampaigns, totalCount, isLoading } = getAllCampaigns(page, pageSize);
-
-  const filteredCampaigns = useMemo(() => {
-    let campaigns = Array.isArray(allCampaigns) ? allCampaigns : [];
-
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      campaigns = campaigns.filter(
-        (campaign: any) => campaign.status?.toUpperCase() === statusFilter.toUpperCase()
-      );
+  // Debounce search term (500ms delay)
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
 
-    // Apply search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      campaigns = campaigns.filter(
-        (campaign: any) =>
-          campaign.campaignName?.toLowerCase().includes(term) ||
-          campaign.emailSubject?.toLowerCase().includes(term) ||
-          campaign.description?.toLowerCase().includes(term)
-      );
-    }
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setPage(1); // Reset page on new search
+    }, 500); // 500ms debounce delay
 
-    return campaigns;
-  }, [allCampaigns, statusFilter, searchTerm]);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchTerm]);
+
+  // Reset page to 1 when filters change
+  const handleStatusFilterChange = (value: CampaignStatus) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    // Don't reset page here - let debounce handle it
+  };
+
+  // Use server-side filtering and pagination with debounced search term
+  const { allCampaigns, totalCount, isLoading, error } = getAllCampaigns(
+    page,
+    pageSize,
+    statusFilter,
+    debouncedSearchTerm
+  );
 
   const totalPages = Math.ceil((totalCount || 0) / pageSize);
 
@@ -130,11 +143,11 @@ export default function CampaignListPage() {
               <Input
                 placeholder="Search campaigns by name, subject, or description..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-9"
               />
             </div>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as CampaignStatus)}>
+            <Select value={statusFilter} onValueChange={(value) => handleStatusFilterChange(value as CampaignStatus)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -154,22 +167,31 @@ export default function CampaignListPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {isLoading ? 'Loading...' : `${filteredCampaigns.length} Campaign${filteredCampaigns.length !== 1 ? 's' : ''}`}
+            {isLoading ? 'Loading...' : `${totalCount || 0} Campaign${totalCount !== 1 ? 's' : ''}`}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {error ? (
+            <div className="text-center py-12">
+              <p className="text-destructive mb-4">
+                Failed to load campaigns. Please try again.
+              </p>
+              <Button onClick={() => window.location.reload()} variant="outline">
+                Retry
+              </Button>
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-          ) : filteredCampaigns.length === 0 ? (
+          ) : allCampaigns.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">
-                {searchTerm || statusFilter !== 'all'
+                {debouncedSearchTerm || statusFilter !== 'all'
                   ? 'No campaigns match your filters'
                   : 'No campaigns found. Create your first campaign!'}
               </p>
-              {!searchTerm && statusFilter === 'all' && (
+              {!debouncedSearchTerm && statusFilter === 'all' && (
                 <Button onClick={() => navigate(paths.dashboard.campaign.new)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Campaign
@@ -191,7 +213,7 @@ export default function CampaignListPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredCampaigns.map((campaign: any) => (
+                    {allCampaigns.map((campaign: any) => (
                       <TableRow
                         key={campaign._id || campaign.id}
                         className="cursor-pointer hover:bg-muted/50"

@@ -30,18 +30,32 @@ export async function getPaignatedCampaigns(params?: string) {
   }
 }
 
-export function getAllCampaigns(page = 1, pageSize = 10) {
-  const url = `/campaigns?pageNumber=${page}&pageSize=${pageSize}`;
+export function getAllCampaigns(page = 1, pageSize = 10, status?: string, search?: string) {
+  const params = new URLSearchParams({
+    pageNumber: page.toString(),
+    pageSize: pageSize.toString(),
+  });
 
-  const { data } = useSWR(url, fetcher, swrOptions);
+  if (status && status !== 'all') {
+    params.append('status', status);
+  }
+
+  if (search && search.trim()) {
+    params.append('search', search.trim());
+  }
+
+  const url = `/campaigns?${params.toString()}`;
+
+  const { data, error, isLoading } = useSWR(url, fetcher, swrOptions);
 
   const memoizedValue = useMemo(
     () => ({
       allCampaigns: Array.isArray(data?.data?.allCampaigns) ? data.data.allCampaigns : [],
       totalCount: data?.data?.totalRecords || 0,
-      isLoading: !data,
+      isLoading: isLoading,
+      error: error,
     }),
-    [data]
+    [data, error, isLoading]
   );
 
   return memoizedValue;

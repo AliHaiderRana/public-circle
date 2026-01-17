@@ -100,3 +100,43 @@ export async function deleteTemplate(id: string) {
     return null;
   }
 }
+
+export async function duplicateTemplate(id: string) {
+  try {
+    const response = await axios.post('/templates/duplicate', { templateId: id });
+    return response;
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || error?.message || 'Failed to duplicate template');
+    return null;
+  }
+}
+
+export async function createTemplateSaveAs(templateId: string, params: any) {
+  try {
+    const response = await axios.post(`/templates/duplicate/${templateId}`, params);
+    return response;
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || error?.message || 'Failed to save template as new');
+    return null;
+  }
+}
+
+export function getAllTemplateGroups() {
+  const url = `/company-grouping?type=TEMPLATE`;
+
+  const { data, error } = useSWR(url, fetcher, {
+    revalidateIfStale: true,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  });
+
+  const memoizedValue = useMemo(
+    () => ({
+      allGroups: error && (error as any).status === 404 ? [] : data?.data || [],
+      isLoading: !data && !error,
+    }),
+    [data, error]
+  );
+
+  return memoizedValue;
+}
