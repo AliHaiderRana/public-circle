@@ -4,7 +4,7 @@
  */
 
 import { useRef, useEffect, useCallback } from 'react';
-import { useBeeEditor, UseBeeEditorOptions } from '@/hooks/useBeeEditor';
+import { useBeeEditor, type UseBeeEditorOptions } from '@/hooks/useBeeEditor';
 import { EditorLoader } from './EditorLoader';
 import { EditorError } from './EditorError';
 

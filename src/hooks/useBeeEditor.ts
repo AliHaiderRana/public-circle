@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import BeePlugin from '@mailupinc/bee-plugin';
 import { toast } from 'sonner';
-import { createBeeEditorConfig, getBeeClientId, BeeEditorCallbacks } from '@/lib/beeEditorConfig';
+import { createBeeEditorConfig, getBeeClientId, type BeeEditorCallbacks } from '@/lib/beeEditorConfig';
 
 export interface UseBeeEditorOptions {
   containerId?: string;

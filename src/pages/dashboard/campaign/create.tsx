@@ -40,15 +40,9 @@ const campaignSchema = z.object({
   emailSubject: z.string().min(1, 'Email subject is required').max(200, 'Email subject must be less than 200 characters'),
   description: z.string().max(1000, 'Description must be less than 1000 characters').optional(),
   sourceEmailAddress: z.string().email('Invalid email address').min(1, 'Source email is required'),
-  status: z.enum(['ACTIVE', 'DRAFT', 'PAUSED', 'INACTIVE'], {
-    required_error: 'Please select a status',
-  }),
-  runMode: z.enum(['IMMEDIATE', 'SCHEDULED'], {
-    required_error: 'Please select a run mode',
-  }),
-  frequency: z.enum(['ONE_TIME', 'RECURRING'], {
-    required_error: 'Please select a frequency',
-  }),
+  status: z.enum(['ACTIVE', 'DRAFT', 'PAUSED', 'INACTIVE']),
+  runMode: z.enum(['IMMEDIATE', 'SCHEDULED']),
+  frequency: z.enum(['ONE_TIME', 'RECURRING']),
   runSchedule: z.string().optional(),
   isRecurring: z.boolean().default(false),
   isOnGoing: z.boolean().default(false),
