@@ -24,11 +24,13 @@ function RootRedirect() {
     return <LoadingState variant="spinner" message="Loading..." />;
   }
 
-  // Redirect based on auth state
+  // If authenticated, redirect to dashboard
   if (authenticated) {
     return <Navigate to={paths.dashboard.analytics} replace />;
   }
 
+  // If not authenticated, redirect to sign in
+  // (HomePage at '/' will only be accessible if user navigates there directly)
   return <Navigate to={paths.auth.jwt.signIn} replace />;
 }
 
@@ -48,13 +50,15 @@ function RootRedirect() {
  */
 export function AppRouter() {
   const routes = useRoutes([
-    // Root redirect - check auth state
+    // Root redirect - check auth state first
+    // This will redirect authenticated users to dashboard
+    // Unauthenticated users will be redirected to sign in
     {
       path: '/',
       element: <RootRedirect />,
     },
 
-    // Public routes
+    // Public routes (note: home page '/' is also here, but RootRedirect takes precedence)
     ...publicRoutes,
 
     // Auth routes
@@ -73,7 +77,7 @@ export function AppRouter() {
       ),
     },
 
-    // Error routes (must be last)
+    // Error routes (must be last - catch-all 404)
     ...errorRoutes,
   ]);
 
