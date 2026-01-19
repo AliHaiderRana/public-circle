@@ -3,11 +3,21 @@
 const ROOTS = {
   AUTH: '/auth',
   DASHBOARD: '/dashboard',
-};
+} as const;
 
 // ----------------------------------------------------------------------
 
+/**
+ * Path Constants
+ * 
+ * Centralized path definitions for the application.
+ * All routes should use these constants instead of hardcoded strings.
+ * 
+ * Dynamic paths (with parameters) are provided as functions.
+ */
+
 export const paths = {
+  // Public routes
   emailVerification: '/email-verification',
   analytics: '/analytics',
   maintenance: '/maintenance',
@@ -20,6 +30,7 @@ export const paths = {
   page404: '/error/404',
   page500: '/error/500',
   components: '/components',
+
   // AUTH
   auth: {
     jwt: {
@@ -29,23 +40,79 @@ export const paths = {
       updatePassword: `${ROOTS.AUTH}/jwt/update-password`,
     },
   },
+
   // DASHBOARD
   dashboard: {
     root: `${ROOTS.DASHBOARD}`,
     analytics: `${ROOTS.DASHBOARD}/analytics`,
-    addfilters: `${ROOTS.DASHBOARD}/addfilters`,
+    
+    // Campaign routes
+    campaign: {
+      root: `${ROOTS.DASHBOARD}/campaign`,
+      list: `${ROOTS.DASHBOARD}/campaign/list`,
+      new: `${ROOTS.DASHBOARD}/campaign/new`,
+      recurring: `${ROOTS.DASHBOARD}/campaign/recurring`,
+      details: (id: string) => `${ROOTS.DASHBOARD}/campaign/${id}`,
+      edit: (id: string) => `${ROOTS.DASHBOARD}/campaign/edit/${id}`,
+    },
+
+    // Template routes
     template: {
       root: `${ROOTS.DASHBOARD}/templates`,
       create: `${ROOTS.DASHBOARD}/templates/template`,
+      createWithId: (id: string) => `${ROOTS.DASHBOARD}/templates/template/${id}`,
       sample: `${ROOTS.DASHBOARD}/templates/sample`,
       select: `${ROOTS.DASHBOARD}/templates/select`,
     },
+
+    // Audience routes
+    audience: {
+      root: `${ROOTS.DASHBOARD}/audience`,
+      filters: `${ROOTS.DASHBOARD}/audience/filters`,
+      newFilter: `${ROOTS.DASHBOARD}/audience/newfilter`,
+      newFilterWithId: (id: string) => `${ROOTS.DASHBOARD}/audience/newfilter/${id}`,
+      segments: `${ROOTS.DASHBOARD}/audience/segments`,
+      newSegment: `${ROOTS.DASHBOARD}/audience/newsegment`,
+      newSegmentWithId: (id: string) => `${ROOTS.DASHBOARD}/audience/newsegment/${id}`,
+      editSegment: (id: string) => `${ROOTS.DASHBOARD}/audience/${id}/edit`,
+      list: `${ROOTS.DASHBOARD}/audience/list`,
+      // Legacy paths for backward compatibility
+      newsegment: `${ROOTS.DASHBOARD}/audience/newsegment`,
+      newfilter: `${ROOTS.DASHBOARD}/audience/newfilter`,
+      edit: (id: string) => `${ROOTS.DASHBOARD}/audience/${id}/edit`,
+    },
+
+    // Configuration routes
+    configurations: {
+      root: `${ROOTS.DASHBOARD}/configurations`,
+      contacts: `${ROOTS.DASHBOARD}/configurations/contacts`,
+      contactsImport: `${ROOTS.DASHBOARD}/configurations/contacts/import`,
+      emailConfiguration: `${ROOTS.DASHBOARD}/configurations/emailConfiguration`,
+      newEmail: `${ROOTS.DASHBOARD}/configurations/newEmail`,
+      webhooks: `${ROOTS.DASHBOARD}/configurations/webhooks`,
+      roles: `${ROOTS.DASHBOARD}/configurations/roles&members`,
+      // Legacy paths for backward compatibility
+      addEmail: `${ROOTS.DASHBOARD}/configurations/newEmail`,
+      emailconfiguration: `${ROOTS.DASHBOARD}/configurations/emailConfiguration`,
+      details: (title: string) => `${ROOTS.DASHBOARD}/configurations/${title}`,
+    },
+
+    // Logs routes
     logs: {
       root: `${ROOTS.DASHBOARD}/logs/list`,
+      list: `${ROOTS.DASHBOARD}/logs/list`,
       detail: `${ROOTS.DASHBOARD}/logs/details`,
+      detailWithId: (id: string) => `${ROOTS.DASHBOARD}/logs/details/${id}`,
       messages: `${ROOTS.DASHBOARD}/logs/messages`,
     },
+
+    // Settings routes
     general: {
+      settings: `${ROOTS.DASHBOARD}/settings`,
+      profile: `${ROOTS.DASHBOARD}/profile`,
+      organizationSettings: `${ROOTS.DASHBOARD}/organizationSettings`,
+      subscription: `${ROOTS.DASHBOARD}/subscription`,
+      // Legacy paths (kept for backward compatibility)
       app: `${ROOTS.DASHBOARD}/app`,
       ecommerce: `${ROOTS.DASHBOARD}/ecommerce`,
       analytics: `${ROOTS.DASHBOARD}/analytics`,
@@ -53,36 +120,14 @@ export const paths = {
       booking: `${ROOTS.DASHBOARD}/booking`,
       file: `${ROOTS.DASHBOARD}/file`,
       course: `${ROOTS.DASHBOARD}/course`,
-      subscription: `${ROOTS.DASHBOARD}/subscription`,
-      settings: `${ROOTS.DASHBOARD}/settings`,
-      profile: `${ROOTS.DASHBOARD}/profile`,
-      organizationSettings: `${ROOTS.DASHBOARD}/organizationSettings`,
     },
-    audience: {
-      root: `${ROOTS.DASHBOARD}/audience`,
-      newsegment: `${ROOTS.DASHBOARD}/audience/newsegment`,
-      list: `${ROOTS.DASHBOARD}/audience/list`,
-      filters: `${ROOTS.DASHBOARD}/audience/filters`,
-      newfilter: `${ROOTS.DASHBOARD}/audience/newfilter`,
-      segments: `${ROOTS.DASHBOARD}/audience/segments`,
-      edit: (id: string) => `${ROOTS.DASHBOARD}/audience/${id}/edit`,
-    },
-    campaign: {
-      root: `${ROOTS.DASHBOARD}/campaign`,
-      list: `${ROOTS.DASHBOARD}/campaign/list`,
-      new: `${ROOTS.DASHBOARD}/campaign/new`,
-      details: (id: string) => `${ROOTS.DASHBOARD}/campaign/${id}`,
-      edit: (id: string) => `${ROOTS.DASHBOARD}/campaign/edit/${id}`,
-    },
-    configurations: {
-      root: `${ROOTS.DASHBOARD}/configurations`,
-      webhooks: `${ROOTS.DASHBOARD}/configurations/webhooks`,
-      addEmail: `${ROOTS.DASHBOARD}/configurations/newEmail`,
-      contacts: `${ROOTS.DASHBOARD}/configurations/contacts`,
-      edit: `${ROOTS.DASHBOARD}/configurations/edit`,
-      emailconfiguration: `${ROOTS.DASHBOARD}/configurations/emailConfiguration`,
-      details: (title: string) => `${ROOTS.DASHBOARD}/configurations/${title}`,
-      roles: `${ROOTS.DASHBOARD}/configurations/roles&members`,
-    },
+
+    // Legacy paths (kept for backward compatibility)
+    addfilters: `${ROOTS.DASHBOARD}/addfilters`,
   },
-};
+} as const;
+
+// Type exports for better TypeScript support
+export type Paths = typeof paths;
+export type DashboardPaths = typeof paths.dashboard;
+export type AuthPaths = typeof paths.auth;

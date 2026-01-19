@@ -1,7 +1,7 @@
 // @ts-nocheck - Skip TypeScript checking for Vercel deployment
 /* eslint-disable */
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useNavigate, useParams, useBlocker, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,19 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Home, ArrowLeft, AlertCircle, CheckCircle2, Eye } from 'lucide-react';
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+import { ArrowLeft, AlertCircle, CheckCircle2, Eye, Info } from 'lucide-react';
 import { paths } from '@/routes/paths';
 import { createTemplate, updateTemplate, getTemplateById, getAllTemplateGroups, createTemplateSaveAs } from '@/actions/templates';
 import { getFilterKeys } from '@/actions/filters';
 import { getSignedUrl, getCompanyAsset, uploadToS3 } from '@/actions/assets';
+import { getActiveSubscriptions } from '@/actions/subscription';
 import {
   Select,
   SelectContent,
@@ -32,12 +25,13 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { FileManagerDialog } from '@/components/file-manager/FileManagerDialog';
-import { addFooterToBeeTemplate } from '@/lib/bee-footer';
+import { addFooterToUnlayerTemplate } from '@/lib/unlayer-footer';
 import { EmailTemplateEditor } from '@/components/template-editor/EmailTemplateEditor';
 import { TemplatePreview } from '@/components/template-editor/TemplatePreview';
 import { UnsavedChangesDialog } from '@/components/template-editor/UnsavedChangesDialog';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
+import { convertHtmlToJson } from '@/lib/html-to-json';
 
 const templateSchema = z.object({
   name: z.string().min(1, 'Template name is required'),
@@ -55,6 +49,8 @@ export default function TemplateCreatePage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // State declarations - must be before safeNavigate callback
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [isSaving, setIsSaving] = useState(false);
@@ -71,9 +67,22 @@ export default function TemplateCreatePage() {
   const [imageSelectCallback, setImageSelectCallback] = useState<((result: { url: string }) => void) | null>(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+  
+  // Safe navigate function that checks for unsaved changes
+  const safeNavigate = useCallback((to: string | number, options?: any) => {
+    if (hasUnsavedChanges && typeof to === 'string' && to !== location.pathname) {
+      setShowUnsavedDialog(true);
+      setPendingNavigation(() => () => {
+        navigate(to, options);
+      });
+    } else {
+      navigate(to, options);
+    }
+  }, [hasUnsavedChanges, location.pathname, navigate]);
 
   const { mergedTags } = getFilterKeys();
   const { allGroups: templateGroups, isLoading: groupsLoading } = getAllTemplateGroups();
+  const { isPurchasedRemoveReference, isSubscriptionLoading } = getActiveSubscriptions();
   const isEditMode = !!id;
 
   const {
@@ -147,9 +156,22 @@ export default function TemplateCreatePage() {
               setHtmlContent(finalHtmlContent);
             }
             
-            // Store JSON template if available
+            // Store JSON template if available, or convert HTML to JSON
             if (finalJsonTemplate) {
               setJsonTemplate(finalJsonTemplate);
+            } else if (finalHtmlContent) {
+              // Convert HTML to JSON format for Unlayer editor
+              try {
+                console.log('🔄 Converting HTML to JSON for editor...');
+                const convertedJson = convertHtmlToJson(finalHtmlContent);
+                setJsonTemplate(convertedJson);
+                console.log('✅ HTML converted to JSON:', {
+                  rowsCount: convertedJson.body?.rows?.length || 0,
+                });
+              } catch (error) {
+                console.error('❌ Error converting HTML to JSON:', error);
+                toast.error('Failed to convert template HTML to editor format');
+              }
             }
             
             setIsTemplateLoaded(true);
@@ -216,7 +238,7 @@ export default function TemplateCreatePage() {
     style: { color: '#3b82f6', fontWeight: 'bold' },
   })) || [];
 
-  // Image upload callback for Bee editor - use useCallback to prevent recreation
+  // Image upload callback for Unlayer editor - use useCallback to prevent recreation
   const uploadImageCallback = useCallback(async (data: any, done: (result: { progress: number; url: string }) => void) => {
     try {
       const fileName = data?.name || `image-${Date.now()}.${data?.type?.split('/')[1] || 'jpg'}`;
@@ -252,7 +274,7 @@ export default function TemplateCreatePage() {
     }
   }, []);
 
-  // Image selection callback for Bee editor (for selecting from existing assets)
+  // Image selection callback for Unlayer editor (for selecting from existing assets)
   const selectImageCallback = useCallback(async (_data: any, done: (result: { url: string }) => void) => {
     // Open file manager dialog
     setImageSelectCallback(() => done);
@@ -297,7 +319,7 @@ export default function TemplateCreatePage() {
   }, [htmlContent, id]);
 
   const handleEditorLoad = useCallback((jsonFile: any) => {
-    console.log('BeeFree editor loaded successfully', jsonFile);
+    console.log('Unlayer editor loaded successfully', jsonFile);
     // Editor is ready
   }, []);
 
@@ -306,12 +328,20 @@ export default function TemplateCreatePage() {
     if (location.state?.importedTemplate) {
       return location.state.importedTemplate;
     } else if (isEditMode && templateData) {
-      // Prioritize templateData.jsonTemplate for initial load
-      // jsonTemplate state is for tracking changes after editor loads
-      if (templateData?.jsonTemplate) {
-        return templateData.jsonTemplate;
-      } else if (jsonTemplate) {
+      // Prioritize jsonTemplate state (which may be converted from HTML)
+      if (jsonTemplate) {
         return jsonTemplate;
+      } else if (templateData?.jsonTemplate) {
+        return templateData.jsonTemplate;
+      } else if (templateData?.body) {
+        // If we have HTML but no JSON, try to convert it
+        try {
+          console.log('🔄 Converting template HTML to JSON on demand...');
+          return convertHtmlToJson(templateData.body);
+        } catch (error) {
+          console.error('❌ Error converting HTML to JSON:', error);
+          return null;
+        }
       }
     }
     return null;
@@ -335,9 +365,23 @@ export default function TemplateCreatePage() {
         rowsCount: template.body?.rows?.length || 0,
         fromLocationState: !!location.state?.importedTemplate,
         fromEditMode: isEditMode && !!templateData,
+        templateId: id,
+        templateStructure: {
+          hasBody: !!template.body,
+          hasRows: !!template.body?.rows,
+          rowsLength: template.body?.rows?.length || 0,
+          firstRow: template.body?.rows?.[0] ? 'exists' : 'missing',
+        },
       });
     } else {
-      console.log('📋 No initial template (blank editor)');
+      console.log('📋 No initial template (blank editor)', {
+        isEditMode,
+        hasTemplateData: !!templateData,
+        hasJsonTemplate: !!jsonTemplate,
+        templateId: id,
+        templateDataJsonTemplate: !!templateData?.jsonTemplate,
+        templateDataBody: !!templateData?.body,
+      });
     }
     
     // Add footer if includeUnsubscribe is enabled and template doesn't already have footer
@@ -353,15 +397,15 @@ export default function TemplateCreatePage() {
       );
       
       if (!hasFooter) {
-        template = addFooterToBeeTemplate(template, {
-          showPoweredBy: true,
+        template = addFooterToUnlayerTemplate(template, {
+          showPoweredBy: !isPurchasedRemoveReference,
           includeUnsubscribe: includeUnsubscribe,
         });
       }
     }
     
     return template;
-  }, [getInitialTemplate, includeUnsubscribe]);
+  }, [getInitialTemplate, includeUnsubscribe, templateData, jsonTemplate, id, isEditMode, location.state]);
 
   // Store editor instance from EmailTemplateEditor component
   const editorInstanceRef = useRef<any>(null);
@@ -369,23 +413,104 @@ export default function TemplateCreatePage() {
   // Handler to update editor instance ref
   const handleEditorInstanceReady = useCallback((instance: any) => {
     editorInstanceRef.current = instance;
-  }, []);
+    
+    // If we have a template ready, load it immediately with delay
+    if (instance?.editor && initialTemplateWithFooter) {
+      setTimeout(() => {
+        try {
+          console.log('🚀 Editor ready, loading template immediately:', {
+            hasBody: !!initialTemplateWithFooter.body,
+            rowsCount: initialTemplateWithFooter.body?.rows?.length || 0,
+            template: initialTemplateWithFooter,
+          });
+          
+          if (initialTemplateWithFooter.body && initialTemplateWithFooter.body.rows) {
+            instance.editor.loadDesign(initialTemplateWithFooter);
+            console.log('✅ Template loaded in handleEditorInstanceReady');
+          } else {
+            console.warn('⚠️ Template structure invalid:', initialTemplateWithFooter);
+          }
+        } catch (error) {
+          console.error('❌ Error loading template when editor ready:', error);
+        }
+      }, 300);
+    }
+  }, [initialTemplateWithFooter]);
+
+  // Reload template when jsonTemplate changes (e.g., after HTML conversion)
+  useEffect(() => {
+    if (editorInstanceRef.current?.editor && isEditMode && jsonTemplate && isTemplateLoaded) {
+      const template = initialTemplateWithFooter;
+      if (template && template.body && template.body.rows) {
+        setTimeout(() => {
+          try {
+            console.log('🔄 Reloading template after jsonTemplate update:', {
+              hasBody: !!template.body,
+              rowsCount: template.body?.rows?.length || 0,
+              templateId: id,
+            });
+            editorInstanceRef.current.editor.loadDesign(template);
+            console.log('✅ Template reloaded successfully');
+          } catch (error) {
+            console.error('❌ Error reloading template:', error);
+          }
+        }, 500);
+      } else {
+        console.warn('⚠️ Cannot reload template - invalid structure:', {
+          hasTemplate: !!template,
+          hasBody: !!template?.body,
+          hasRows: !!template?.body?.rows,
+        });
+      }
+    }
+  }, [jsonTemplate, isEditMode, isTemplateLoaded, initialTemplateWithFooter, id]);
 
   // Block navigation when there are unsaved changes (for in-app navigation)
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
-  );
-
-  // Show confirmation dialog when navigation is blocked
+  // Custom navigation blocker for BrowserRouter (replaces useBlocker which only works with data routers)
   useEffect(() => {
-    if (blocker.state === 'blocked') {
-      setShowUnsavedDialog(true);
-      setPendingNavigation(() => () => {
-        blocker.proceed();
-      });
-    }
-  }, [blocker]);
+    if (!hasUnsavedChanges) return;
+
+    // Intercept browser back/forward navigation
+    const handlePopState = (e: PopStateEvent) => {
+      if (hasUnsavedChanges) {
+        // Push the state back to prevent navigation
+        window.history.pushState(null, '', window.location.href);
+        setShowUnsavedDialog(true);
+        setPendingNavigation(() => () => {
+          // Allow navigation after confirmation
+          window.history.back();
+        });
+      }
+    };
+
+    // Intercept Link clicks (React Router uses data-router-link or regular anchor tags)
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a[href]') as HTMLAnchorElement;
+      
+      if (link && link.href && !link.href.startsWith('mailto:') && !link.href.startsWith('tel:')) {
+        const href = link.getAttribute('href');
+        if (href && href.startsWith('/') && href !== location.pathname) {
+          e.preventDefault();
+          e.stopPropagation();
+          setShowUnsavedDialog(true);
+          setPendingNavigation(() => () => {
+            navigate(href);
+          });
+        }
+      }
+    };
+
+    // Push a state to enable popstate detection
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+    document.addEventListener('click', handleClick, true); // Use capture phase
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      document.removeEventListener('click', handleClick, true);
+    };
+  }, [hasUnsavedChanges, location.pathname, navigate]);
 
   // Warn about unsaved changes when closing browser tab/window
   useEffect(() => {
@@ -417,10 +542,17 @@ export default function TemplateCreatePage() {
   const onSubmit = async (data: TemplateFormValues) => {
     setIsSaving(true);
     try {
-      // Trigger save in Bee editor first to get latest HTML and JSON
-      if (editorInstanceRef.current) {
+      // Trigger save in Unlayer editor first to get latest HTML and JSON
+      if (editorInstanceRef.current?.editor) {
         try {
-          editorInstanceRef.current.save();
+          editorInstanceRef.current.editor.saveDesign((design: any) => {
+            editorInstanceRef.current.editor.exportHtml((data: any) => {
+              const { design: savedDesign, html } = data;
+              setHtmlContent(html);
+              setJsonTemplate(savedDesign);
+              setValue('body', html);
+            });
+          });
           // Small delay to ensure onSave callback is executed
           await new Promise(resolve => setTimeout(resolve, 300));
         } catch (error) {
@@ -500,26 +632,20 @@ export default function TemplateCreatePage() {
     // Open preview immediately with existing content if available
     setIsPreviewOpen(true);
     
-    // Get current HTML from Bee editor in background (non-blocking)
-    if (editorInstanceRef.current) {
+    // Get current HTML from Unlayer editor in background (non-blocking)
+    if (editorInstanceRef.current?.editor) {
       try {
         // Use exportHtml() to get current editor content without triggering save
-        const currentHtml = await editorInstanceRef.current.exportHtml();
-        if (currentHtml) {
-          setHtmlContent(currentHtml);
-          setValue('body', currentHtml);
-        }
+        editorInstanceRef.current.editor.exportHtml((data: any) => {
+          const { html } = data;
+          if (html) {
+            setHtmlContent(html);
+            setValue('body', html);
+          }
+        });
       } catch (error) {
         console.warn('Error exporting HTML for preview:', error);
         // If exportHtml fails, use existing htmlContent from onChange callback
-        if (!htmlContent) {
-          try {
-            // Last resort: trigger save to update htmlContent
-            editorInstanceRef.current.save();
-          } catch (saveError) {
-            console.warn('Error saving before preview:', saveError);
-          }
-        }
       }
     }
   };
@@ -529,21 +655,23 @@ export default function TemplateCreatePage() {
   // @ts-ignore - Unused but kept for future use
   const handleExport = async () => {
     try {
-      if (editorInstanceRef.current) {
-        const html = await editorInstanceRef.current.exportHtml();
-        if (html) {
-          // Create a blob and download
-          const blob = new Blob([html], { type: 'text/html' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${templateName || 'template'}.html`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          toast.success('HTML exported successfully');
-        }
+      if (editorInstanceRef.current?.editor) {
+        editorInstanceRef.current.editor.exportHtml((data: any) => {
+          const { html } = data;
+          if (html) {
+            // Create a blob and download
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${templateName || 'template'}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success('HTML exported successfully');
+          }
+        });
       }
     } catch (error) {
       console.error('Error exporting HTML:', error);
@@ -564,43 +692,17 @@ export default function TemplateCreatePage() {
   }, [hasUnsavedChanges, navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4">
-          {/* Breadcrumbs */}
-          <Breadcrumb className="mb-4">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <a href={paths.dashboard.root} onClick={(e) => { e.preventDefault(); navigate(paths.dashboard.root); }}>
-                    <Home className="h-4 w-4" />
-                  </a>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <a href={paths.dashboard.template.root} onClick={(e) => { e.preventDefault(); navigate(paths.dashboard.template.root); }}>
-                    Templates
-                  </a>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>
-                  {isEditMode ? 'Edit Template' : 'Create Template'}
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+      <div className="bg-card border-b border-border shrink-0 z-10">
+        <div className="px-6 py-4">
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate(paths.dashboard.template.root)}
+                onClick={handleExit}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -624,13 +726,13 @@ export default function TemplateCreatePage() {
                   onCheckedChange={(checked) => {
                     setIncludeUnsubscribe(checked);
                     // Update footer in editor if it's already loaded
-                    if (editorInstanceRef.current) {
-                      editorInstanceRef.current.save((design: any) => {
-                        const updatedTemplate = addFooterToBeeTemplate(design, {
-                          showPoweredBy: true,
+                    if (editorInstanceRef.current?.editor) {
+                      editorInstanceRef.current.editor.saveDesign((design: any) => {
+                        const updatedTemplate = addFooterToUnlayerTemplate(design, {
+                          showPoweredBy: !isPurchasedRemoveReference,
                           includeUnsubscribe: checked,
                         });
-                        editorInstanceRef.current.load(updatedTemplate);
+                        editorInstanceRef.current.editor.loadDesign(updatedTemplate);
                         setJsonTemplate(updatedTemplate);
                       });
                     }
@@ -690,120 +792,155 @@ export default function TemplateCreatePage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-          {/* Template Details */}
-          <div className="lg:col-span-12">
-            <Card className="border shadow-sm">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b px-4 sm:px-6 py-3 sm:py-4">
-                <CardTitle className="text-base sm:text-lg font-semibold">Template Details</CardTitle>
-                <CardDescription className="text-xs sm:text-sm mt-1">
-                  Provide basic information about your template
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Template Name *</Label>
-                    <Input
-                      id="name"
-                      placeholder="e.g., Welcome Email, Newsletter, Product Launch"
-                      {...register('name')}
-                      className="max-w-md"
-                    />
-                    {errors.name && (
-                      <p className="text-sm text-red-500">{errors.name.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description (Optional)</Label>
-                    <Input
-                      id="description"
-                      placeholder="Brief description of this template"
-                      {...register('description')}
-                      className="max-w-md"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="companyGroupingId">Template Category *</Label>
-                    <Select
-                      value={watch('companyGroupingId')}
-                      onValueChange={(value) => setValue('companyGroupingId', value)}
-                    >
-                      <SelectTrigger className="max-w-md">
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {groupsLoading ? (
-                          <SelectItem value="" disabled>Loading categories...</SelectItem>
-                        ) : templateGroups && templateGroups.length > 0 ? (
-                          templateGroups.map((group: any) => (
-                            <SelectItem key={group._id} value={group._id}>
-                              {group.groupName || group.name}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="" disabled>No categories available</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {errors.companyGroupingId && (
-                      <p className="text-sm text-red-500">{errors.companyGroupingId.message}</p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="includeUnSubscriber"
-                      checked={watch('includeUnSubscriber')}
-                      onCheckedChange={(checked) => setValue('includeUnSubscriber', checked as boolean)}
-                    />
-                    <Label htmlFor="includeUnSubscriber" className="font-normal cursor-pointer">
-                      Include unsubscribed contacts
-                    </Label>
-                  </div>
-
-                  {/* Hidden fields for kind and templateSource - set based on context */}
-                  <input type="hidden" {...register('kind')} />
-                  <input type="hidden" {...register('templateSource')} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Editor */}
-          <div className="lg:col-span-12">
-            <Card className="overflow-hidden border shadow-sm">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b px-4 sm:px-6 py-3 sm:py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base sm:text-lg font-semibold">Template Editor</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm mt-1">
-                      Design your email template using the visual editor
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0 relative bg-white" style={{ height: 'calc(100vh - 280px)', minHeight: '600px' }}>
-                {isEditorEnabled && (
-                  <EmailTemplateEditor
-                    initialTemplate={initialTemplateWithFooter}
-                    mergeTags={editorMergeTags}
-                    onSave={handleEditorSave}
-                    onChange={handleEditorChange}
-                    onLoad={handleEditorLoad}
-                    onAutoSave={handleEditorAutoSave}
-                    uploadImage={uploadImageCallback}
-                    selectImage={selectImageCallback}
-                    onInstanceReady={handleEditorInstanceReady}
-                    enabled={isEditorEnabled}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Left Sidebar - Template Details & Merge Tags */}
+        <div className="w-72 border-r border-border bg-card overflow-y-auto shrink-0 h-full">
+          <div className="p-4 space-y-4">
+            {/* Template Details Section */}
+            <div className="space-y-3">
+              <div className="px-2">
+                <h3 className="text-sm font-semibold text-foreground mb-1">Template Details</h3>
+                <p className="text-xs text-muted-foreground">Configure your template settings</p>
+              </div>
+              
+              <div className="space-y-3 px-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-xs font-medium">Template Name *</Label>
+                  <Input
+                    id="name"
+                    placeholder="e.g., Welcome Email"
+                    {...register('name')}
+                    className="h-9 text-sm"
                   />
-                )}
-              </CardContent>
-            </Card>
+                  {errors.name && (
+                    <p className="text-xs text-destructive mt-1">{errors.name.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="description" className="text-xs font-medium">Description</Label>
+                  <Input
+                    id="description"
+                    placeholder="Optional description"
+                    {...register('description')}
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="companyGroupingId" className="text-xs font-medium">Category *</Label>
+                  <Select
+                    value={watch('companyGroupingId')}
+                    onValueChange={(value) => setValue('companyGroupingId', value)}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groupsLoading ? (
+                        <SelectItem value="__loading__" disabled>Loading...</SelectItem>
+                      ) : templateGroups && templateGroups.length > 0 ? (
+                        templateGroups.map((group: any) => (
+                          <SelectItem key={group._id} value={group._id}>
+                            {group.groupName || group.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="__no_categories__" disabled>No categories</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.companyGroupingId && (
+                    <p className="text-xs text-destructive mt-1">{errors.companyGroupingId.message}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-2 pt-1">
+                  <Checkbox
+                    id="includeUnSubscriber"
+                    checked={watch('includeUnSubscriber')}
+                    onCheckedChange={(checked) => setValue('includeUnSubscriber', checked as boolean)}
+                  />
+                  <Label htmlFor="includeUnSubscriber" className="text-xs font-normal cursor-pointer leading-none">
+                    Include unsubscribed contacts
+                  </Label>
+                </div>
+
+                <input type="hidden" {...register('kind')} />
+                <input type="hidden" {...register('templateSource')} />
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-border my-4"></div>
+
+            {/* Merge Tags Section */}
+            <div className="space-y-3">
+              <div className="px-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-foreground">Merge Tags</h3>
+                </div>
+                <p className="text-xs text-muted-foreground">Drag or click to use in template</p>
+              </div>
+              
+              <div className="px-2">
+                <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
+                  {mergedTags?.slice(0, 12).map((tag: any, index: number) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className="w-full px-2.5 py-1.5 text-left text-xs font-mono bg-muted hover:bg-muted/80 rounded-md border border-border transition-colors text-foreground"
+                      onClick={() => {
+                        // Could add functionality to insert tag into editor
+                        toast.info(`Use ${tag.value} in your template`);
+                      }}
+                    >
+                      {tag.value}
+                    </button>
+                  ))}
+                  {mergedTags && mergedTags.length > 12 && (
+                    <p className="text-xs text-muted-foreground mt-2 px-1">
+                      +{mergedTags.length - 12} more available
+                    </p>
+                  )}
+                  {(!mergedTags || mergedTags.length === 0) && (
+                    <p className="text-xs text-muted-foreground px-1">No merge tags available</p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Editor Area - Full Height */}
+        <div 
+          className="flex-1 min-h-0" 
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            height: '100%',
+            minHeight: 0,
+            maxHeight: '100%',
+            overflow: 'hidden'
+          }}
+        >
+          {isEditorEnabled && (
+            <EmailTemplateEditor
+              initialTemplate={initialTemplateWithFooter}
+              mergeTags={editorMergeTags}
+              onSave={handleEditorSave}
+              onChange={handleEditorChange}
+              onLoad={handleEditorLoad}
+              onAutoSave={handleEditorAutoSave}
+              uploadImage={uploadImageCallback}
+              selectImage={selectImageCallback}
+              onInstanceReady={handleEditorInstanceReady}
+              enabled={isEditorEnabled}
+              className="flex-1 min-h-0"
+              key={`editor-${id || 'new'}-${isTemplateLoaded ? 'loaded' : 'loading'}`}
+            />
+          )}
         </div>
       </div>
 

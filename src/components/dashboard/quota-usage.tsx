@@ -56,7 +56,7 @@ export function QuotaUsage({ quota }: QuotaUsageProps) {
             </div>
             <Progress value={Math.min(bandwidthPercentage, 100)} className="h-2" />
           </div>
-          <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Total in Plan</p>
               <p className="text-sm font-semibold">
@@ -115,7 +115,7 @@ export function QuotaUsage({ quota }: QuotaUsageProps) {
             </div>
             <Progress value={Math.min(emailPercentage, 100)} className="h-2" />
           </div>
-          <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Total in Plan</p>
               <p className="text-sm font-semibold">

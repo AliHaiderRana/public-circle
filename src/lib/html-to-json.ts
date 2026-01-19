@@ -1,4 +1,5 @@
-// HTML to BeeFree JSON converter
+// HTML to Unlayer JSON converter
+// Converts HTML to Unlayer (react-email-editor) JSON format
 // Ported from web/jsonScript/script.js
 
 function parseStyleTagCSS(doc: Document) {

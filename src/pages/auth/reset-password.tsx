@@ -83,15 +83,15 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-8">
+      <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-blue-100 p-3">
-              <Lock className="h-6 w-6 text-blue-600" />
+            <div className="rounded-full bg-primary/10 p-3">
+              <Lock className="h-6 w-6 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Forgot your password?</CardTitle>
+          <CardTitle className="text-2xl font-bold">Forgot your password?</CardTitle>
           <CardDescription className="pt-2">
             Please enter the email address associated with your account and we'll email you a link
             to reset your password.
@@ -113,15 +113,15 @@ export default function ResetPasswordPage() {
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>
-              {isLoading || isSubmitting ? 'Send request...' : 'Reset Password'}
+            <Button type="submit" className="w-full" disabled={isLoading || isSubmitting} size="lg">
+              {isLoading || isSubmitting ? 'Sending...' : 'Reset Password'}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <Link
               to={paths.auth.jwt.signIn}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-primary hover:underline font-medium"
             >
               Return to sign in
             </Link>

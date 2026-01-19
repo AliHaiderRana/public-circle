@@ -100,7 +100,7 @@ export function EmailAnalyticsChart({
           <div className="flex flex-wrap items-center gap-3">
             {/* Period Selector */}
             <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
@@ -117,7 +117,7 @@ export function EmailAnalyticsChart({
                   value={selectedDate.month().toString()}
                   onValueChange={handleMonthChange}
                 >
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-full sm:w-[140px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -132,7 +132,7 @@ export function EmailAnalyticsChart({
                   value={selectedDate.year().toString()}
                   onValueChange={handleYearChange}
                 >
-                  <SelectTrigger className="w-[120px]">
+                  <SelectTrigger className="w-full sm:w-[120px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -151,7 +151,7 @@ export function EmailAnalyticsChart({
                 value={selectedDate.year().toString()}
                 onValueChange={handleYearChange}
               >
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-full sm:w-[120px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

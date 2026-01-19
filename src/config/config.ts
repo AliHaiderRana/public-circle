@@ -67,6 +67,8 @@ export const endpoints = {
     addDomainEmail: '/configuration/email/domain/email-address',
     deleteEmail: '/configuration/email/address/',
     deleteDomain: '/configuration/email/domain/',
+    verifyAppleRelay: '/emails/verify-apple-relay',
+    disablePrivateRelay: '/emails/disable-private-relay',
   },
   templates: {
     allTemplates: '/templates/all?kind=REGULAR',
@@ -77,6 +79,9 @@ export const endpoints = {
   user: {
     getAllUsers: '/company-contacts/all?pageNumber=1&pageSize=10',
     uploadCSV: '/company-contacts/upload-csv',
+    skipTour: '/users/skip-tour',
+    completeTour: '/users/complete-tour',
+    resetTour: '/users/reset-tour',
   },
   auth: {
     me: '/users/me',
@@ -93,6 +98,6 @@ export const endpoints = {
     active: '/stripe/active-subscription',
   },
   invoices: {
-    overageQuota: '/invoices/overage-quota',
+    overageQuota: '/stripe/quota-details',
   },
 };

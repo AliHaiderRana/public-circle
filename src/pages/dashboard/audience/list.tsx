@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Search, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAllUsers } from '@/actions/users';
+import { paths } from '@/routes/paths';
 
 export default function ContactsListPage() {
   const [page, setPage] = useState(1);
@@ -41,10 +42,10 @@ export default function ContactsListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Contacts</h1>
-          <p className="text-muted-foreground mt-1">Manage your contact list</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Contacts</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Manage your contact list</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
@@ -106,7 +107,7 @@ export default function ContactsListPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
                   <div className="text-sm text-muted-foreground">
                     Page {page} of {totalPages} • {filteredUsers.length} contact{filteredUsers.length !== 1 ? 's' : ''}
                   </div>

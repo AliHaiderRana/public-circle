@@ -17,12 +17,21 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Check if subscription is cancelled
   // subscriptionStatus is an array of plans, each with a subscription object
-  const subscription = Array.isArray(subscriptionStatus) && subscriptionStatus.length > 0 
-    ? subscriptionStatus[0]?.subscription 
+  const subscriptionData = Array.isArray(subscriptionStatus) && subscriptionStatus.length > 0 
+    ? subscriptionStatus[0]
     : null;
   
+  const subscription = subscriptionData?.subscription || null;
+  const isSubscriptionCanceled = subscriptionData?.isSubscriptionCanceled || false;
+  
   // Check if subscription status is cancelled or inactive
-  const isSubscriptionCancelled = !subscription || subscription?.status === 'cancelled' || subscription?.status === 'inactive';
+  const isSubscriptionCancelled = 
+    !subscription || 
+    subscription?.status === 'canceled' || 
+    subscription?.status === 'inactive' ||
+    subscription?.cancel_at_period_end ||
+    isSubscriptionCanceled;
+  
   const isSubscriptionPage = location.pathname === paths.dashboard.general.subscription;
 
   useEffect(() => {
@@ -80,7 +89,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (isSubscriptionCancelled && !isSubscriptionPage) {
     return (
       <>
-        <SubscriptionOverlay open={true} />
+        <SubscriptionOverlay 
+          open={true}
+          subscription={subscription || undefined}
+          isSubscriptionCanceled={isSubscriptionCanceled}
+        />
         <div className="pointer-events-none opacity-50">
           {children}
         </div>

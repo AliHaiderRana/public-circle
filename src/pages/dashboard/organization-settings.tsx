@@ -29,6 +29,7 @@ import {
 import { signOut } from '@/auth/actions/auth';
 import { toast } from 'sonner';
 import { XCircle, Upload, Trash2 } from 'lucide-react';
+import { paths } from '@/routes/paths';
 
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '500+'];
 

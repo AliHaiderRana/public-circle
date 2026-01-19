@@ -1,73 +1,199 @@
-# React + TypeScript + Vite
+# Public Circle - Email Marketing Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive email marketing and campaign management platform built with React, TypeScript, and shadcn/ui.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Core Functionality
+- **Campaign Management**: Create, edit, and manage email campaigns
+- **Template Management**: Visual template editor with drag-and-drop
+- **Audience Management**: Contact management, segmentation, and filtering
+- **Analytics Dashboard**: Real-time campaign performance metrics
+- **Configuration Management**: Email settings, webhooks, roles & members
 
-## React Compiler
+### Advanced Features
+- **Notifications System**: Toast notifications and notification center
+- **Subscription Management**: Full subscription lifecycle management
+- **SES Status Monitoring**: Real-time email service health monitoring
+- **Auto-refresh**: Automatic data polling and cache revalidation
+- **Accessibility**: Full keyboard navigation and screen reader support
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Technology Stack
 
-## Expanding the ESLint configuration
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool
+- **React Router** - Routing
+- **SWR** - Data fetching and caching
+- **shadcn/ui** - Component library
+- **Tailwind CSS** - Styling
+- **Zod** - Schema validation
+- **React Hook Form** - Form management
+- **Sonner** - Toast notifications
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 📦 Installation
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```bash
+# Install dependencies
+npm install
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+# Start development server
+npm run dev
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🏗️ Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+public-circle/
+├── src/
+│   ├── components/          # Reusable components
+│   │   ├── ui/             # shadcn/ui components
+│   │   └── custom/         # Custom components
+│   ├── pages/              # Page components
+│   │   ├── auth/           # Authentication pages
+│   │   ├── dashboard/      # Dashboard pages
+│   │   └── ...             # Other pages
+│   ├── layouts/            # Layout components
+│   ├── hooks/              # Custom React hooks
+│   ├── utils/              # Utility functions
+│   ├── actions/            # API actions
+│   ├── routes/             # Route definitions
+│   └── auth/               # Authentication logic
+├── public/                 # Static assets
+└── package.json           # Dependencies
+```
+
+## 🎨 Key Components
+
+### Navigation
+- `CustomBreadcrumbs` - Consistent breadcrumb navigation
+- `DashboardLayout` - Main dashboard layout with sidebar
+- `DashboardHeader` - Header with notifications and user menu
+
+### UI Components
+- `LoadingState` - Multiple loading state variants
+- `ErrorState` - Error handling UI
+- `EmptyState` - Empty state variants
+- `AutoRefreshIndicator` - Auto-refresh status indicator
+
+### Features
+- `NotificationsCenter` - Full-featured notification drawer
+- `SubscriptionStatusAlert` - Subscription status alerts
+- `SesStatusBadge` - SES status monitoring
+
+### Hooks
+- `useKeyboardNavigation` - Keyboard navigation support
+- `useFocusManagement` - Focus trapping and management
+- `useAutoRefresh` - Polling and auto-refresh
+
+## 🔐 Authentication
+
+The application uses JWT-based authentication with:
+- Sign in/Sign up pages
+- Password reset/update
+- Session management
+- Role-based access control
+- Auth guards (AuthGuard, GuestGuard, RoleBasedGuard)
+
+## 📱 Responsive Design
+
+The application is fully responsive with:
+- Mobile-first approach
+- Breakpoints: sm, md, lg, xl
+- Mobile navigation drawer
+- Responsive tables and cards
+- Touch-friendly interactions
+
+## ♿ Accessibility
+
+Full accessibility support including:
+- ARIA attributes throughout
+- Keyboard navigation
+- Focus management
+- Screen reader support
+- Reduced motion preferences
+- Semantic HTML
+
+## 🚦 Getting Started
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd public-circle
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp env.example .env
+   # Edit .env with your configuration
+   ```
+
+4. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open in browser**
+   ```
+   http://localhost:5173
+   ```
+
+## 📝 Environment Variables
+
+Create a `.env` file based on `env.example`:
+
+```env
+VITE_API_URL=http://localhost:3001
+VITE_ASSETS_DIR=
+```
+
+## 🧪 Development
+
+### Code Style
+- TypeScript strict mode
+- ESLint for linting
+- Prettier for formatting (if configured)
+
+### Component Development
+- Use shadcn/ui components as base
+- Follow accessibility guidelines
+- Implement loading and error states
+- Add keyboard navigation support
+
+## 📚 Documentation
+
+- [Migration Plan](../WEB_MIGRATION_PLAN.md) - Complete migration documentation
+- [Migration Complete](./MIGRATION_COMPLETE.md) - Migration summary
+- [Component Documentation](./docs/components.md) - Component reference (if available)
+
+## 🤝 Contributing
+
+1. Follow the existing code style
+2. Use TypeScript for all new code
+3. Add loading and error states
+4. Ensure accessibility compliance
+5. Test on multiple browsers
+
+## 📄 License
+
+[Your License Here]
+
+## 🙏 Acknowledgments
+
+Built with modern web technologies and best practices for a production-ready email marketing platform.
+
+---
+
+**Status**: ✅ Production Ready
+**Last Updated**: January 19, 2025

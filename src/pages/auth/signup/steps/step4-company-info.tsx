@@ -10,12 +10,21 @@ import { updateUser } from '@/actions/signup';
 import { useAuthContext } from '@/auth/hooks/use-auth-context';
 import { toast } from 'sonner';
 import { REGION_KEY } from '@/config/config';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+import { isValidPhoneNumber } from 'react-phone-number-input';
+import { ArrowLeft } from 'lucide-react';
 
 const schema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   businessName: z.string().optional(),
-  phoneNumber: z.string().min(1, 'Phone number is required'),
+  phoneNumber: z
+    .string()
+    .min(1, 'Phone number is required')
+    .refine((val) => isValidPhoneNumber(val || ''), {
+      message: 'Please enter a valid phone number',
+    }),
   secondaryEmail: z.string().email('Invalid email').optional().or(z.literal('')),
   companySize: z.string().optional(),
 });
@@ -91,9 +100,26 @@ export function Step4CompanyInfo({ setActiveStep, isInvited }: Step4CompanyInfoP
     }
   };
 
+  const phoneNumber = watch('phoneNumber');
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-md mx-auto">
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => setActiveStep(3)}
+        className="mb-4"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Tell Us More About Yourself</h3>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
           <Input id="firstName" {...register('firstName')} />
@@ -121,7 +147,7 @@ export function Step4CompanyInfo({ setActiveStep, isInvited }: Step4CompanyInfoP
             <Label htmlFor="companySize">Company Size</Label>
             <Select value={companySize} onValueChange={(value) => setValue('companySize', value)}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Select company size" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="1-10">1-10</SelectItem>
@@ -137,7 +163,15 @@ export function Step4CompanyInfo({ setActiveStep, isInvited }: Step4CompanyInfoP
 
       <div className="space-y-2">
         <Label htmlFor="phoneNumber">Phone Number</Label>
-        <Input id="phoneNumber" type="tel" {...register('phoneNumber')} />
+        <div className="relative">
+          <PhoneInput
+            international
+            defaultCountry="US"
+            value={phoneNumber}
+            onChange={(value) => setValue('phoneNumber', value || '')}
+            className="phone-input"
+          />
+        </div>
         {errors.phoneNumber && (
           <p className="text-sm text-destructive">{errors.phoneNumber.message}</p>
         )}

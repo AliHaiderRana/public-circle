@@ -1,6 +1,6 @@
 /**
  * EditorLoader Component
- * Loading skeleton for the BeeFree editor initialization
+ * Loading skeleton for the Unlayer editor initialization
  */
 
 export function EditorLoader() {

@@ -25,17 +25,8 @@ import {
   Sparkles,
   Image as ImageIcon,
   Loader2,
-  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 
 export default function TemplateSelectPage() {
   const navigate = useNavigate();
@@ -212,30 +203,6 @@ export default function TemplateSelectPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      {/* Breadcrumbs */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <a href={paths.dashboard.root} onClick={(e) => { e.preventDefault(); navigate(paths.dashboard.root); }}>
-                <Home className="h-4 w-4" />
-              </a>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <a href={paths.dashboard.template.root} onClick={(e) => { e.preventDefault(); navigate(paths.dashboard.template.root); }}>
-                Templates
-              </a>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Create Template</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -380,7 +347,7 @@ export default function TemplateSelectPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {/* Upload File Option */}
             <Card
               className={cn(

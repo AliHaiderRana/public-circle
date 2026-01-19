@@ -133,20 +133,20 @@ export default function SignInPage() {
 
   return (
     <>
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Sign in to your account</CardTitle>
-            <CardDescription>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-8">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
+            <CardDescription className="text-center">
               Don't have an account?{' '}
-              <Link to={paths.auth.jwt.signUp} className="text-blue-600 hover:underline">
-                Get started
+              <Link to={paths.auth.jwt.signUp} className="text-primary hover:underline font-medium">
+                Sign up
               </Link>
             </CardDescription>
           </CardHeader>
           <CardContent>
             {errorMsg && (
-              <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              <div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
                 {errorMsg}
               </div>
             )}
@@ -170,7 +170,7 @@ export default function SignInPage() {
                   <Label htmlFor="password">Password</Label>
                   <Link
                     to={paths.auth.jwt.resetPassword}
-                    className="text-sm text-blue-600 hover:underline"
+                    className="text-sm text-primary hover:underline font-medium"
                   >
                     Forgot password?
                   </Link>
@@ -211,8 +211,14 @@ export default function SignInPage() {
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading || isReactivating}>
-                {isLoading ? 'Signing in...' : 'Sign in'}
+              <Button type="submit" className="w-full" disabled={isLoading || isReactivating} size="lg">
+                {isLoading ? (
+                  <>
+                    <span className="mr-2">Signing in...</span>
+                  </>
+                ) : (
+                  'Sign in'
+                )}
               </Button>
             </form>
           </CardContent>

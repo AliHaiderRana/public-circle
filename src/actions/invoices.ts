@@ -17,13 +17,22 @@ const swrOptions = {
 export function getOverageQuota() {
   const url = endpoints.invoices.overageQuota;
 
-  const { data } = useSWR(url, fetcher, swrOptions);
+  const { data, error } = useSWR(url, fetcher, {
+    ...swrOptions,
+    onError: (err) => {
+      // Silently handle 404 errors - endpoint might not be available
+      if (err?.response?.status !== 404) {
+        console.error('Error fetching overage quota:', err);
+      }
+    },
+  });
 
   const memoizedValue = useMemo(
     () => ({
-      quota: data?.data,
+      quota: data?.data || null,
+      error: error?.response?.status === 404 ? null : error, // Ignore 404 errors
     }),
-    [data]
+    [data, error]
   );
 
   return memoizedValue;

@@ -1,12 +1,9 @@
-// @ts-nocheck - Skip TypeScript checking for legacy file
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-// @ts-ignore
-import BeePlugin from '@mailupinc/bee-plugin';
 
 import { createTemplate, updateTemplate, getTemplateById } from '@/actions/templates';
 import { getFilterKeys } from '@/actions/filters';
@@ -28,32 +25,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Save, Eye, Smartphone, Monitor, Info } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Smartphone, Monitor, Info, Loader2 } from 'lucide-react';
 import { paths } from '@/routes/paths';
+import { getSignedUrl, getCompanyAsset, uploadToS3 } from '@/actions/assets';
+
+// Dynamic import for EmailTemplateEditor to handle potential loading issues
+const EmailTemplateEditor = lazy(() => 
+  import('@/components/template-editor/EmailTemplateEditor').then(module => ({ default: module.EmailTemplateEditor }))
+);
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   body: z.string().optional(),
 });
 
-// Credentials - from environment variables
-const CLIENT_ID = import.meta.env.VITE_BEE_CLIENT_ID || '077ccc41-3e5f-44b3-9062-b0a590f6b67f';
-const CLIENT_SECRET = import.meta.env.VITE_BEE_CLIENT_SECRET || 'NQFLDbUTyjM7jFgzuPaPoz4z4YD3Lu4DXP7pV4I2fI5m8GvYvGhc';
-
-const BEE_TEMPLATE = {
-  body: {
-    rows: [],
-  },
-};
-
 export default function TemplateCreate() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [beeEditor, setBeeEditor] = useState<any>(null);
+  const editorInstanceRef = useRef<any>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [htmlContent, setHtmlContent] = useState<string>('');
+  const [jsonTemplate, setJsonTemplate] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditorLoading, setIsEditorLoading] = useState(true);
   const isEditMode = !!id;
@@ -84,154 +77,79 @@ export default function TemplateCreate() {
     }
   }, [id, form]);
 
-  const onSubmitRef = useRef<(values: z.infer<typeof formSchema>) => Promise<void>>();
+  // Prepare merge tags for editor
+  const editorMergeTags = mergedTags?.map((tag: any) => ({
+    name: tag.name || tag.value?.replace(/[{}]/g, ''),
+    value: tag.value || `{{${tag.name}}}`,
+    style: { color: '#3b82f6', fontWeight: 'bold' },
+  })) || [];
 
-  const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
-    setIsSaving(true);
+  // Image upload callback
+  const uploadImageCallback = useCallback(async (data: any, done: (result: { progress: number; url: string }) => void) => {
     try {
-      const templateData = {
-        name: values.name,
-        body: values.body || htmlContent,
-        kind: 'HTML',
-      };
+      const fileName = data?.name || `image-${Date.now()}.${data?.type?.split('/')[1] || 'jpg'}`;
+      const file = data;
 
-      let result;
-      if (isEditMode && id) {
-        result = await updateTemplate(id, templateData);
-      } else {
-        result = await createTemplate(templateData);
-      }
+      const signedUrlResponse = await getSignedUrl({ fileName });
+      if (signedUrlResponse?.status === 200 || signedUrlResponse?.data?.data) {
+        const signedUrl = signedUrlResponse.data?.data?.signedUrl || signedUrlResponse.data?.signedUrl;
+        const assetId = signedUrlResponse.data?.data?.assetId || signedUrlResponse.data?.assetId;
 
-      if ((result as any)?.success || result?.data) {
-        toast.success(isEditMode ? 'Template updated successfully' : 'Template created successfully');
-        navigate(paths.dashboard.template.root);
-      } else {
-        toast.error('Failed to save template');
-      }
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to save template');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [htmlContent, isEditMode, id, navigate]);
-
-  onSubmitRef.current = onSubmit;
-
-  const onFetchBeeToken = async (clientId: string, clientSecret: string, beeEditor: any) => {
-    try {
-      return await beeEditor.getToken(clientId, clientSecret);
-    } catch (error: any) {
-      console.error('BeeFree getToken error:', error);
-      // If token fetch fails, throw a more descriptive error
-      throw new Error('Failed to authenticate with BeeFree editor. Please check your network connection and try again.');
-    }
-  };
-
-  useEffect(() => {
-    const loadBeeEditor = async () => {
-      try {
-        let beeEditor = new BeePlugin();
-        
-        // Fetch token with error handling - continue even if it fails
-        let token;
-        try {
-          token = await onFetchBeeToken(CLIENT_ID, CLIENT_SECRET, beeEditor);
-        } catch (tokenError: any) {
-          console.warn('Token fetch failed, continuing anyway:', tokenError);
-          // Continue initialization - the plugin might handle auth internally
+        const uploadSuccess = await uploadToS3(file, signedUrl);
+        if (uploadSuccess) {
+          const assetResponse = await getCompanyAsset(assetId);
+          if (assetResponse?.status === 200 || assetResponse?.data?.data) {
+            const assetUrl = assetResponse.data?.data?.url || assetResponse.data?.url;
+            done({ progress: 100, url: assetUrl });
+          } else {
+            toast.error('Failed to get uploaded image URL');
+            done({ progress: 0, url: '' });
+          }
+        } else {
+          toast.error('Failed to upload image');
+          done({ progress: 0, url: '' });
         }
-
-        // Prepare merge tags from filters
-        const mergeTags =
-          mergedTags?.map((tag: any) => ({
-            name: tag.name || tag.value?.replace(/[{}]/g, ''),
-            value: tag.value || `{{${tag.name}}}`,
-            style: { color: '#3b82f6', fontWeight: 'bold' },
-          })) || [];
-
-        let config = {
-          uid: 'CmsUserName', // [mandatory] - matching original
-          container: 'bee-plugin-container', // [mandatory]
-          autosave: 30, // [optional, default:false]
-          language: 'en-US', // [optional, default:'en-US']
-          trackChanges: true, // [optional, default: false]
-          preventClose: false, // [optional, default:false]
-          editorFonts: {}, // [optional, default: see description]
-          contentDialog: {}, // [optional, default: see description]
-          defaultForm: {}, // [optional, default: {}]
-          roleHash: '', // [optional, default: ""]
-          rowDisplayConditions: {}, // [optional, default: {}]
-          rowsConfiguration: {},
-          mergeTags,
-          workspace: {
-            // [optional, default: {type : 'default'}]
-            editSingleRow: false, // [optional, default: false]},
-          },
-          commenting: false, // [optional, default: false]}
-          commentingThreadPreview: true, // [optional, default: true]}
-          commentingNotifications: true, // [optional, default: true]}
-          disableLinkSanitize: true, // [optional, default: false]}
-          loadingSpinnerDisableOnSave: false, // [optional, default: false]}
-          loadingSpinnerDisableOnDialog: true, // [optional, default: false]}
-          maxRowsDisplayed: 35, // [optional, set this to any number to define the maximum number of rows that a category should display]}
-          onSave: function (jsonFile: any, htmlFile: string) {
-            setHtmlContent(htmlFile);
-            form.setValue('body', htmlFile);
-          },
-          onChange: function (jsonFile: any, response: any) {
-            // Track changes
-          },
-          onSaveAsTemplate: function (jsonFile: any) {
-            // Save as template
-          },
-          onAutoSave: function (jsonFile: any) {
-            // Auto-save tracking
-          },
-          onSend: function (htmlFile: string) {
-            // Send function
-          },
-          onLoad: function (jsonFile: any) {
-            setIsEditorLoading(false);
-            // Template loaded
-          },
-          onError: function (error: any) {
-            const errorMessage = typeof error === 'string' ? error : error?.message || 'Unknown error';
-            console.error('Bee Plugin Error:', errorMessage);
-            // Only show error if it's not an authentication error (those are handled in catch block)
-            if (!errorMessage.toLowerCase().includes('authentication') && !errorMessage.toLowerCase().includes('credentials')) {
-              toast.error('Editor error: ' + errorMessage);
-            }
-          },
-          onWarning: function (alertMessage: string) {
-            console.warn('Editor warning:', alertMessage);
-          },
-          translations: {
-            'bee-common-widget-bar': {
-              content: 'MODULES',
-            },
-          },
-        };
-
-        // Load existing template if editing, otherwise use blank template
-        const initialTemplate = htmlContent ? undefined : BEE_TEMPLATE;
-        beeEditor.start(config, initialTemplate);
-        setBeeEditor(beeEditor);
-      } catch (error: any) {
-        console.error('Failed to init Bee Plugin', error);
-        
-        // Provide more helpful error messages
-        console.error('Bee Plugin initialization error:', error);
-        toast.error('Failed to load template editor: ' + (error?.message || 'Unknown error'));
-        
-        setIsEditorLoading(false);
+      } else {
+        toast.error('Failed to get upload URL');
+        done({ progress: 0, url: '' });
       }
-    };
-
-    // Only initialize if container exists
-    if (editorRef.current) {
-      loadBeeEditor();
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast.error(error?.message || 'Failed to upload image');
+      done({ progress: 0, url: '' });
     }
-  }, [mergedTags, form, htmlContent]);
+  }, []);
+
+  // Editor callbacks
+  const handleEditorSave = useCallback((jsonFile: any, htmlFile: string) => {
+    setHtmlContent(htmlFile);
+    setJsonTemplate(jsonFile);
+    form.setValue('body', htmlFile);
+  }, [form]);
+
+  const handleEditorChange = useCallback((jsonFile: any) => {
+    if (jsonFile) {
+      setJsonTemplate(jsonFile);
+    }
+  }, []);
+
+  const handleEditorLoad = useCallback(() => {
+    setIsEditorLoading(false);
+  }, []);
+
+  const handleEditorInstanceReady = useCallback((instance: any) => {
+    editorInstanceRef.current = instance;
+  }, []);
+
+  // Get initial template
+  const getInitialTemplate = useCallback(() => {
+    if (isEditMode && htmlContent) {
+      // If editing and we have HTML, try to convert it
+      // For now, return null to start fresh or use jsonTemplate if available
+      return null;
+    }
+    return null;
+  }, [isEditMode, htmlContent]);
 
   const handleSave = async () => {
     // Validate template name first
@@ -241,26 +159,78 @@ export default function TemplateCreate() {
       return;
     }
 
-    if (beeEditor) {
-      // Trigger save in Bee editor, which will call onSave callback
-      // The onSave callback will update the form with HTML content
-      beeEditor.save();
-      
-      // Small delay to ensure onSave callback is executed
-      setTimeout(() => {
-        const finalValues = form.getValues();
-        if (finalValues.body || htmlContent) {
-          onSubmit(finalValues);
-        } else {
-          toast.error('Please create some content in the editor');
+    setIsSaving(true);
+    try {
+      // Trigger save in Unlayer editor to get latest HTML and JSON
+      if (editorInstanceRef.current?.editor) {
+        editorInstanceRef.current.editor.saveDesign((design: any) => {
+          editorInstanceRef.current.editor.exportHtml((data: any) => {
+            const { design: savedDesign, html } = data;
+            setHtmlContent(html);
+            setJsonTemplate(savedDesign);
+            form.setValue('body', html);
+            
+            // Proceed with save
+            const templateData = {
+              name: values.name,
+              body: html,
+              kind: 'HTML',
+              jsonTemplate: savedDesign,
+            };
+
+            (async () => {
+              try {
+                let result;
+                if (isEditMode && id) {
+                  result = await updateTemplate(id, templateData);
+                } else {
+                  result = await createTemplate(templateData);
+                }
+
+                if ((result as any)?.success || result?.data) {
+                  toast.success(isEditMode ? 'Template updated successfully' : 'Template created successfully');
+                  navigate(paths.dashboard.template.root);
+                } else {
+                  toast.error('Failed to save template');
+                }
+              } catch (error: any) {
+                toast.error(error?.message || 'Failed to save template');
+              } finally {
+                setIsSaving(false);
+              }
+            })();
+          });
+        });
+      } else {
+        // Fallback: submit form directly if editor isn't ready
+        if (htmlContent) {
+          form.setValue('body', htmlContent);
         }
-      }, 500);
-    } else {
-      // Fallback: submit form directly if editor isn't ready
-      if (htmlContent) {
-        form.setValue('body', htmlContent);
+        const templateData = {
+          name: values.name,
+          body: htmlContent || values.body || '',
+          kind: 'HTML',
+          jsonTemplate: jsonTemplate,
+        };
+
+        let result;
+        if (isEditMode && id) {
+          result = await updateTemplate(id, templateData);
+        } else {
+          result = await createTemplate(templateData);
+        }
+
+        if ((result as any)?.success || result?.data) {
+          toast.success(isEditMode ? 'Template updated successfully' : 'Template created successfully');
+          navigate(paths.dashboard.template.root);
+        } else {
+          toast.error('Failed to save template');
+        }
+        setIsSaving(false);
       }
-      form.handleSubmit(onSubmit)();
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to save template');
+      setIsSaving(false);
     }
   };
 
@@ -296,7 +266,7 @@ export default function TemplateCreate() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Modern Header */}
       <div className="border-b bg-white shadow-sm sticky top-0 z-20">
         <div className="container mx-auto px-6 py-4">
@@ -332,9 +302,12 @@ export default function TemplateCreate() {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div
+        className="flex-1 flex overflow-hidden"
+        style={{ height: 'calc(100vh - 96px)' }}
+      >
         {/* Sidebar - Template Settings */}
-        <div className="w-80 border-r bg-white overflow-y-auto shrink-0">
+        <div className="w-80 border-r bg-white overflow-y-auto shrink-0 h-full">
           <div className="p-6 space-y-6">
             <Card>
               <CardHeader>
@@ -399,33 +372,31 @@ export default function TemplateCreate() {
               </CardContent>
             </Card>
 
-            <div className="text-xs text-gray-500 space-y-1">
-              <p className="font-medium">Tips:</p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Use merge tags to personalize emails</li>
-                <li>Save regularly to avoid losing work</li>
-                <li>Preview before sending campaigns</li>
-              </ul>
-            </div>
           </div>
         </div>
 
         {/* Editor Area - Full Width */}
-        <div className="flex-1 bg-gray-100 relative">
-          {isEditorLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+        <div className="flex-1 bg-gray-100 relative h-full min-h-[600px]">
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-sm text-gray-600">Loading editor...</p>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-500">Loading editor...</p>
               </div>
             </div>
-          )}
-          <div
-            ref={editorRef}
-            id="bee-plugin-container"
-            className="h-full w-full absolute inset-0"
-            style={{ minHeight: '600px' }}
-          />
+          }>
+            <EmailTemplateEditor
+              initialTemplate={getInitialTemplate()}
+              mergeTags={editorMergeTags}
+              onSave={handleEditorSave}
+              onChange={handleEditorChange}
+              onLoad={handleEditorLoad}
+              uploadImage={uploadImageCallback}
+              onInstanceReady={handleEditorInstanceReady}
+              enabled={true}
+              className="h-full w-full"
+            />
+          </Suspense>
         </div>
       </div>
 

@@ -53,7 +53,7 @@ export async function registerUser(params: { password: string }) {
 
 export async function updateUser(params: any) {
   try {
-    const response = await axios.patch('/users/me', params);
+    const response = await axios.patch('/users', params);
     return response;
   } catch (error: any) {
     console.error('Error updating user:', error);
@@ -64,7 +64,7 @@ export async function updateUser(params: any) {
 
 export async function verifyReferalCode(params: { referralCode: string }) {
   try {
-    const response = await axios.post('/auth/verify-referral-code', params);
+    const response = await axios.post('/users/referral-codes/verify', params);
     return response;
   } catch (error: any) {
     console.error('Error verifying referral code:', error);
@@ -75,7 +75,7 @@ export async function verifyReferalCode(params: { referralCode: string }) {
 
 export async function getSubscriptionPlans() {
   try {
-    const response = await axios.get('/subscription/plans');
+    const response = await axios.get('/stripe/plans?pageSize=10');
     return response;
   } catch (error: any) {
     console.error('Error fetching subscription plans:', error);
@@ -84,13 +84,56 @@ export async function getSubscriptionPlans() {
   }
 }
 
-export async function createPaymentIntent(params: any) {
+export async function createPaymentIntent() {
   try {
-    const response = await axios.post('/subscription/create-payment-intent', params);
+    const response = await axios.get('/stripe/setup-intent');
     return response;
   } catch (error: any) {
     console.error('Error creating payment intent:', error);
     toast.error(error?.response?.data?.message || error?.message || 'Failed to create payment');
+    throw error;
+  }
+}
+
+export async function attachPaymentMethod(params: { paymentMethodId: string }) {
+  try {
+    const response = await axios.post('/stripe/attach-payment-method', params);
+    return response;
+  } catch (error: any) {
+    console.error('Error attaching payment method:', error);
+    toast.error(error?.response?.data?.message || error?.message || 'Failed to attach payment method');
+    throw error;
+  }
+}
+
+export async function createSubscription(params: { items: { price: string }[]; coupon?: string }) {
+  try {
+    const response = await axios.post('/stripe/subscriptions', params);
+    return response;
+  } catch (error: any) {
+    console.error('Error creating subscription:', error);
+    toast.error(error?.response?.data?.message || error?.message || 'Failed to create subscription');
+    throw error;
+  }
+}
+
+export async function requestIp(params: { requested: boolean }) {
+  try {
+    const response = await axios.post('/company-contacts/dedicated-ip-request', params);
+    return response;
+  } catch (error: any) {
+    console.error('Error requesting IP:', error);
+    toast.error(error?.response?.data?.message || error?.message || 'Failed to request IP');
+    throw error;
+  }
+}
+
+export async function verifyEmail(params: { token: string }) {
+  try {
+    const response = await axios.post('/auth/verify-email', params);
+    return response;
+  } catch (error: any) {
+    console.error('Error verifying email:', error);
     throw error;
   }
 }

@@ -1,6 +1,6 @@
 /**
- * Footer utilities for BeeFree editor
- * Adapts the footer functionality from Unlayer to work with BeeFree JSON format
+ * Footer utilities for Unlayer editor
+ * Creates footer rows in Unlayer JSON format
  */
 
 export function generateUniqueId(): string {
@@ -14,14 +14,14 @@ export interface FooterOptions {
 }
 
 /**
- * Creates footer rows JSON for BeeFree editor
+ * Creates footer rows JSON for Unlayer editor
  * Returns an array of row objects that can be added to the template
  */
-export function createBeeFooterRows(options: FooterOptions = {}) {
+export function createUnlayerFooterRows(options: FooterOptions = {}) {
   const {
     showPoweredBy = true,
     includeUnsubscribe = true,
-    publicCirclesLogoUrl = 'https://publiccircles.com/logo.png', // Default logo URL
+    publicCirclesLogoUrl = import.meta.env.VITE_PUBLIC_CIRCLES_LOGO || 'https://publiccircles.com/logo.png',
   } = options;
 
   const rows: any[] = [];
@@ -219,7 +219,10 @@ export function createBeeFooterRows(options: FooterOptions = {}) {
           fontWeight: 'normal',
           hideDesktop: true,
           hideMobile: false,
-          _meta: { htmlID: 'u_content_text_unsubscribe_mobile', htmlClassNames: 'u_content_text' },
+          _meta: {
+            htmlID: 'u_content_text_unsubscribe_mobile',
+            htmlClassNames: 'u_content_text',
+          },
           selectable: false,
           draggable: false,
           duplicatable: false,
@@ -239,16 +242,24 @@ export function createBeeFooterRows(options: FooterOptions = {}) {
 }
 
 /**
- * Adds footer to an existing BeeFree template design
+ * Adds footer to an existing Unlayer template design
  */
-export function addFooterToBeeTemplate(
+export function addFooterToUnlayerTemplate(
   design: any,
   options: FooterOptions = {}
 ): any {
   const updatedDesign = { ...design };
   
+  // Ensure body structure exists
+  if (!updatedDesign.body) {
+    updatedDesign.body = { rows: [] };
+  }
+  if (!updatedDesign.body.rows) {
+    updatedDesign.body.rows = [];
+  }
+  
   // Check if footer already exists
-  const hasFooter = design?.body?.rows?.some((row: any) =>
+  const hasFooter = updatedDesign.body.rows.some((row: any) =>
     row.values?._meta?.htmlID?.includes('footer') ||
     row.columns?.some((column: any) =>
       column.contents?.some((content: any) =>
@@ -260,7 +271,7 @@ export function addFooterToBeeTemplate(
 
   if (hasFooter) {
     // Remove existing footer
-    updatedDesign.body.rows = design.body.rows.filter((row: any) =>
+    updatedDesign.body.rows = updatedDesign.body.rows.filter((row: any) =>
       !row.values?._meta?.htmlID?.includes('footer') &&
       !row.columns?.some((column: any) =>
         column.contents?.some((content: any) =>
@@ -272,14 +283,8 @@ export function addFooterToBeeTemplate(
   }
 
   // Add new footer rows
-  const footerRows = createBeeFooterRows(options);
-  if (updatedDesign.body && updatedDesign.body.rows) {
-    updatedDesign.body.rows = [...updatedDesign.body.rows, ...footerRows];
-  } else {
-    updatedDesign.body = {
-      rows: footerRows,
-    };
-  }
+  const footerRows = createUnlayerFooterRows(options);
+  updatedDesign.body.rows = [...updatedDesign.body.rows, ...footerRows];
 
   return updatedDesign;
 }

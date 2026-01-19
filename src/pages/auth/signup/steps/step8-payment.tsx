@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { updateUser, activateCompany } from '@/actions/signup';
+import { updateUser, activateCompany, attachPaymentMethod, createSubscription, requestIp } from '@/actions/signup';
 import { useAuthContext } from '@/auth/hooks/use-auth-context';
 import { toast } from 'sonner';
 import { paths } from '@/routes/paths';
-import { CheckCircle2, Check } from 'lucide-react';
+import { CheckCircle2, Check, ArrowLeft, Loader2 } from 'lucide-react';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_API_KEY || '');
 
 interface Step8PaymentProps {
   activeStep: number;
@@ -18,13 +22,147 @@ interface Step8PaymentProps {
   clientSecret: string;
 }
 
+function PaymentForm({
+  selectedItems,
+  reward,
+  clientSecret,
+  onSuccess,
+}: {
+  selectedItems: any[];
+  reward: any;
+  clientSecret: string;
+  onSuccess: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const { checkUserSession } = useAuthContext();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const selectedPlan = selectedItems.find((item: any) => !item?.metadata?.isAddOn);
+  const selectedAddOns = selectedItems.filter((item: any) => item?.metadata?.isAddOn === 'true');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      toast.error('Stripe has not loaded yet');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Submit elements form
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        toast.error(submitError.message || 'Error submitting payment form');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Create a payment method via Stripe Elements
+      const { error: confirmError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        redirect: 'if_required',
+      });
+
+      if (confirmError) {
+        toast.error(confirmError.message || 'Error creating payment method');
+        setIsProcessing(false);
+        return;
+      }
+
+      const paymentMethodId = setupIntent?.payment_method;
+
+      if (!paymentMethodId) {
+        toast.error('Payment method not found');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Attach the payment method to the customer
+      const attachRes = await attachPaymentMethod({ paymentMethodId: paymentMethodId as string });
+
+      if (attachRes?.status === 200) {
+        // Create the subscription
+        const coupon = localStorage.getItem('referalCode') || '';
+        const subscriptionRes = await createSubscription({
+          items: [selectedPlan, ...selectedAddOns].map((item: any) => ({
+            price: item?.price?.id,
+          })),
+          coupon: coupon || undefined,
+        });
+
+        if (subscriptionRes?.status === 200) {
+          // Check if dedicated IP was selected
+          const hasDedicatedItem = selectedItems.some(
+            (item: any) => item?.name && item?.name?.includes('Dedicated')
+          );
+
+          if (hasDedicatedItem) {
+            await requestIp({ requested: true });
+          }
+
+          // Clear referral code
+          localStorage.removeItem('referalCode');
+
+          // Refresh session
+          await checkUserSession?.();
+
+          // Update signup step
+          await updateUser({ signUpStepsCompleted: 8 });
+
+          // Activate company
+          await activateCompany();
+
+          // Refresh session again
+          await checkUserSession?.();
+
+          toast.success('Payment successful! Welcome to Public Circles.');
+          onSuccess();
+        } else {
+          toast.error('Subscription creation failed');
+        }
+      } else {
+        toast.error('Failed to attach payment method');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error?.message || 'An unexpected error occurred');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement />
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={isProcessing || !stripe || !elements}
+        size="lg"
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Processing Payment...
+          </>
+        ) : (
+          'Pay Now'
+        )}
+      </Button>
+    </form>
+  );
+}
+
 export function Step8Payment({
   selectedItems,
   reward,
+  clientSecret,
+  setActiveStep,
 }: Step8PaymentProps) {
-  const { checkUserSession } = useAuthContext();
   const navigate = useNavigate();
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
 
   // Extract plan and add-ons from selectedItems
@@ -53,32 +191,11 @@ export function Step8Payment({
 
   const totalCost = calculateTotal();
 
-  const handleCompletePayment = async () => {
-    setIsProcessing(true);
-    try {
-      // Here you would integrate with Stripe Elements
-      // For now, just simulate success
-      
-      // Update signup step completion
-      await updateUser({ signUpStepsCompleted: 8 });
-      
-      // Activate the company after successful payment
-      await activateCompany();
-      
-      // Refresh user session to get updated company status
-      await checkUserSession?.();
-      
-      setIsComplete(true);
-      toast.success('Payment successful! Welcome to Public Circles.');
-      
-      setTimeout(() => {
-        navigate(paths.dashboard.analytics);
-      }, 2000);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || error?.response?.data?.errorMessage || 'Payment failed');
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleSuccess = () => {
+    setIsComplete(true);
+    setTimeout(() => {
+      navigate(paths.dashboard.analytics);
+    }, 2000);
   };
 
   if (isComplete) {
@@ -95,7 +212,18 @@ export function Step8Payment({
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => setActiveStep(7)}
+        className="mb-4"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Order Summary */}
         <Card>
@@ -191,21 +319,21 @@ export function Step8Payment({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Payment form would go here - Stripe Elements integration */}
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                Payment processing integration with Stripe Elements would go here.
-              </p>
-            </div>
-
-            <Button
-              onClick={handleCompletePayment}
-              className="w-full"
-              disabled={isProcessing || !selectedPlan}
-              size="lg"
-            >
-              {isProcessing ? 'Processing Payment...' : 'Complete Payment'}
-            </Button>
+            {clientSecret && clientSecret.trim() !== '' ? (
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <PaymentForm
+                  selectedItems={selectedItems}
+                  reward={reward}
+                  clientSecret={clientSecret}
+                  onSuccess={handleSuccess}
+                />
+              </Elements>
+            ) : (
+              <div className="p-4 bg-muted rounded-lg text-center">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Loading payment form...</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

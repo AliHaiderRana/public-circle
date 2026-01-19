@@ -21,10 +21,29 @@ export function getAllConfigurations() {
   const { data } = useSWR(url, fetcher, swrOptions);
 
   const memoizedValue = useMemo(
-    () => ({
-      allConfigurations: data?.data,
-      isLoading: !data,
-    }),
+    () => {
+      const emailConfigurations = data?.data?.emailConfigurations;
+      
+      // Check if all addresses and active domain addresses have Apple Relay verified
+      const appleRelayVerified =
+        emailConfigurations?.addresses?.every(
+          (item: any) => item.privateRelayVerificationStatus === 'VERIFIED'
+        ) &&
+        emailConfigurations?.domains?.every((domain: any) => {
+          const activeAddresses =
+            domain?.addresses?.filter((addr: any) => addr.status === 'ACTIVE') || [];
+          return (
+            activeAddresses.length === 0 ||
+            activeAddresses.every((addr: any) => addr.privateRelayVerificationStatus === 'VERIFIED')
+          );
+        });
+
+      return {
+        allConfigurations: emailConfigurations,
+        isLoading: !data,
+        appleRelayVerified: appleRelayVerified ?? false,
+      };
+    },
     [data]
   );
 
@@ -115,6 +134,34 @@ export async function checkDomainVerification(emailDomain: string) {
   } catch (error: any) {
     console.error('Error checking domain verification:', error);
     toast.error(error?.response?.data?.message || error?.message || 'Failed to verify domain');
+    return null;
+  }
+}
+
+export async function verifyAppleRelay(senderEmail: string) {
+  try {
+    const response = await axios.post(endpoints.configurations.verifyAppleRelay, {
+      senderEmail,
+    });
+    toast.success('Apple Relay verification email sent successfully');
+    return response;
+  } catch (error: any) {
+    console.error('Error verifying Apple Relay:', error);
+    toast.error(error?.response?.data?.message || error?.message || 'Failed to verify Apple Relay');
+    return null;
+  }
+}
+
+export async function disablePrivateRelay(emailAddress: string) {
+  try {
+    const response = await axios.post(endpoints.configurations.disablePrivateRelay, {
+      emailAddress,
+    });
+    toast.success('Apple Relay disabled successfully');
+    return response;
+  } catch (error: any) {
+    console.error('Error disabling Apple Relay:', error);
+    toast.error(error?.response?.data?.message || error?.message || 'Failed to disable Apple Relay');
     return null;
   }
 }

@@ -5,10 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuthContext } from '@/auth/hooks/use-auth-context';
 import { updateUser } from '@/actions/signup';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
+import { paths } from '@/routes/paths';
+import { Eye, EyeOff, Globe } from 'lucide-react';
+import { REGION_KEY } from '@/config/config';
 
 export default function SettingsPage() {
   const { user, checkUserSession } = useAuthContext();
@@ -25,6 +36,23 @@ export default function SettingsPage() {
   const [notifyCampaigns, setNotifyCampaigns] = useState(true);
   const [notifySystem, setNotifySystem] = useState(true);
   const [notifyBilling, setNotifyBilling] = useState(true);
+
+  // Password change
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  // Region/Currency
+  const [selectedRegion, setSelectedRegion] = useState<string>(() => {
+    return localStorage.getItem(REGION_KEY) || 'US';
+  });
+  const [isSavingRegion, setIsSavingRegion] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -83,6 +111,76 @@ export default function SettingsPage() {
     toast.success('Theme preference updated');
   };
 
+  const handleRegionChange = async (region: string) => {
+    setIsSavingRegion(true);
+    try {
+      const currency = region.toUpperCase() === 'CA' ? 'CAD' : 'USD';
+      localStorage.setItem(REGION_KEY, region);
+      setSelectedRegion(region);
+      
+      // Update user's currency preference
+      await updateUser({ currency });
+      await checkUserSession?.();
+      
+      toast.success('Region and currency updated successfully');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update region');
+    } finally {
+      setIsSavingRegion(false);
+    }
+  };
+
+  const currentCurrency = selectedRegion.toUpperCase() === 'CA' ? 'CAD' : 'USD';
+  const currentRegionName = selectedRegion.toUpperCase() === 'CA' ? 'Canada' : 'United States';
+
+  const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters');
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    // Check for password requirements
+    const hasUpperCase = /[A-Z]/.test(passwordForm.newPassword);
+    const hasLowerCase = /[a-z]/.test(passwordForm.newPassword);
+    const hasNumber = /[0-9]/.test(passwordForm.newPassword);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(passwordForm.newPassword);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+      toast.error('Password must include uppercase, lowercase, number, and special character');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await updateUser({
+        password: passwordForm.newPassword,
+      });
+      toast.success('Password updated successfully');
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update password');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -97,7 +195,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
                 <Input
@@ -267,6 +365,155 @@ export default function SettingsPage() {
               </div>
             </RadioGroup>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Region & Currency */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Region & Currency</CardTitle>
+          <CardDescription>Select your region to set the currency for pricing and billing</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="region">Region</Label>
+            <Select
+              value={selectedRegion}
+              onValueChange={handleRegionChange}
+              disabled={isSavingRegion}
+            >
+              <SelectTrigger id="region" className="w-full sm:w-[300px]">
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <SelectValue placeholder="Select region" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="US">
+                  <div className="flex items-center gap-2">
+                    <span>🇺🇸</span>
+                    <span>United States (USD)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="CA">
+                  <div className="flex items-center gap-2">
+                    <span>🇨🇦</span>
+                    <span>Canada (CAD)</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Current region: <strong>{currentRegionName}</strong> | Currency: <strong>{currentCurrency}</strong>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Changing your region will update pricing and billing currency. This may affect your subscription.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Change Password */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Change Password</CardTitle>
+          <CardDescription>Update your account password</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={passwordForm.currentPassword}
+                  onChange={(e) =>
+                    setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+                  }
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={passwordForm.newPassword}
+                  onChange={(e) =>
+                    setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                  }
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Must be at least 8 characters with uppercase, lowercase, number, and special character
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                  }
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            <Button type="submit" disabled={isChangingPassword}>
+              {isChangingPassword ? 'Updating...' : 'Update Password'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>

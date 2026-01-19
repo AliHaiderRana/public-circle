@@ -217,7 +217,7 @@ export default function TemplateList() {
   };
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
       {/* Breadcrumbs */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -379,7 +379,7 @@ export default function TemplateList() {
 
                                 {/* Metadata Section */}
                                 <div className="space-y-2.5 pt-2 border-t">
-                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs">
                                         <div className="space-y-0.5">
                                             <span className="text-muted-foreground font-medium">Type</span>
                                             <p className="text-foreground">{template.kind || 'REGULAR'}</p>
@@ -486,15 +486,15 @@ export default function TemplateList() {
 
             {/* Pagination */}
             {!templatesLoading && totalCount > 0 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 justify-center sm:justify-start">
                   <div className="text-sm text-muted-foreground">
                     Page {page} of {totalPages} • {totalCount || 0} total templates
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Rows per page:</span>
                     <Select value={rowsPerPage.toString()} onValueChange={handleChangeRowsPerPage}>
-                      <SelectTrigger className="w-[80px]">
+                      <SelectTrigger className="w-full sm:w-[80px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

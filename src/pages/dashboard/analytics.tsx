@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getDashboardStats } from '@/actions/dashboard';
 import { getOverageQuota } from '@/actions/invoices';
 import { Button } from '@/components/ui/button';
@@ -7,15 +7,50 @@ import dayjs from 'dayjs';
 import { DashboardStatsCards } from '@/components/dashboard/stats-cards';
 import { QuotaUsage } from '@/components/dashboard/quota-usage';
 import { EmailAnalyticsChart } from '@/components/dashboard/email-analytics-chart';
+import { useAuthContext } from '@/auth/hooks/use-auth-context';
+import { paths } from '@/routes/paths';
+import { SubscriptionStatusAlert } from '@/components/subscription/subscription-status-alert';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
-export default function AnalyticsPage() {
+function AnalyticsPage() {
+  const { user } = useAuthContext();
   const [dashboardStats, setDashboardStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'monthly' | 'yearly'>('daily');
   const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { quota } = getOverageQuota();
 
-  const fetchDashboardStats = async () => {
+  // Generate mock chart data for demonstration
+  const generateMockChartData = useCallback((period: 'daily' | 'monthly' | 'yearly') => {
+    if (period === 'daily') {
+      return {
+        emails: Array.from({ length: 30 }, (_, i) => ({
+          [`Day ${i + 1}`]: Math.floor(Math.random() * 500) + 200,
+        })),
+      };
+    } else if (period === 'monthly') {
+      return {
+        emails: Array.from({ length: 12 }, (_, i) => ({
+          [`Month ${i + 1}`]: Math.floor(Math.random() * 5000) + 2000,
+        })),
+      };
+    } else {
+      return {
+        emails: Array.from({ length: 10 }, (_, i) => ({
+          [`Year ${2024 - i}`]: Math.floor(Math.random() * 50000) + 20000,
+        })),
+      };
+    }
+  }, []);
+
+  const fetchDashboardStats = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = {
@@ -51,37 +86,28 @@ export default function AnalyticsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedPeriod, selectedDate, generateMockChartData]);
 
-  // Generate mock chart data for demonstration
-  const generateMockChartData = (period: 'daily' | 'monthly' | 'yearly') => {
-    if (period === 'daily') {
-      return {
-        emails: Array.from({ length: 30 }, (_, i) => ({
-          [`Day ${i + 1}`]: Math.floor(Math.random() * 500) + 200,
-        })),
-      };
-    } else if (period === 'monthly') {
-      return {
-        emails: Array.from({ length: 12 }, (_, i) => ({
-          [`Month ${i + 1}`]: Math.floor(Math.random() * 5000) + 2000,
-        })),
-      };
-    } else {
-      return {
-        emails: Array.from({ length: 10 }, (_, i) => ({
-          [`Year ${2024 - i}`]: Math.floor(Math.random() * 50000) + 20000,
-        })),
-      };
-    }
-  };
+  // Auto-refresh every 30 seconds
+  const { refresh: autoRefresh } = useAutoRefresh({
+    enabled: true,
+    interval: 30000,
+    onRefresh: async () => {
+      await fetchDashboardStats();
+    },
+  });
 
   useEffect(() => {
     fetchDashboardStats();
-  }, [selectedPeriod, selectedDate]);
+  }, [fetchDashboardStats]);
 
   const handleRefresh = async () => {
-    await fetchDashboardStats();
+    setIsRefreshing(true);
+    try {
+      await fetchDashboardStats();
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
   };
 
   const formatChartData = (data: any) => {
@@ -132,25 +158,36 @@ export default function AnalyticsPage() {
     );
   }
 
+  const userName = user?.firstName || user?.displayName || 'there';
+
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Welcome Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Hi, Welcome back {userName} 👋
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Track your email performance and usage metrics
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className="h-9 w-9"
-        >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={isLoading || isRefreshing}
+                className="h-9 w-9 self-start sm:self-auto"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading || isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh analytics data</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Stats Cards */}
@@ -177,3 +214,5 @@ export default function AnalyticsPage() {
     </div>
   );
 }
+
+export default AnalyticsPage;

@@ -11,4 +11,20 @@ export default defineConfig({
     },
     extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
   },
+  optimizeDeps: {
+    include: [
+      'react-email-editor',
+      'dayjs',
+      'react-router-dom',
+      'lucide-react',
+      'axios',
+      'swr',
+    ],
+    exclude: [],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/react-email-editor/, /node_modules/],
+    },
+  },
 })

@@ -33,13 +33,19 @@ export function getSubscriptionStatus() {
 export function getActiveSubscriptions() {
   const url = endpoints.subscription.active;
 
-  const { data } = useSWR(url, fetcher, swrOptions);
+  const { data, isLoading } = useSWR(url, fetcher, swrOptions);
 
   const memoizedValue = useMemo(
     () => ({
-      activeSubscriptions: data?.data,
+      activeSubscriptions: data?.data || [],
+      isPurchasedRemoveReference: Array.isArray(data?.data)
+        ? data.data.some(
+            (plan: any) => plan.productId === import.meta.env.VITE_REMOVE_REF_PLAN_ID
+          )
+        : false,
+      isSubscriptionLoading: isLoading,
     }),
-    [data]
+    [data, isLoading]
   );
 
   return memoizedValue;

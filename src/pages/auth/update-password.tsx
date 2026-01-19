@@ -109,15 +109,15 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-8">
+      <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-blue-100 p-3">
-              <Lock className="h-6 w-6 text-blue-600" />
+            <div className="rounded-full bg-primary/10 p-3">
+              <Lock className="h-6 w-6 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Reset password</CardTitle>
+          <CardTitle className="text-2xl font-bold">Reset password</CardTitle>
           <CardDescription className="pt-2">
             You can reset your password here. Confirm password should be same as password.
           </CardDescription>
@@ -179,34 +179,49 @@ export default function UpdatePasswordPage() {
               <div className="space-y-2 p-3 bg-gray-50 rounded-md">
                 <p className="text-sm font-medium">Password requirements:</p>
                 <ul className="space-y-1 text-sm">
-                  <li className={`flex items-center gap-2 ${hasMinLength ? 'text-green-600' : 'text-gray-500'}`}>
-                    {hasMinLength ? '✓' : '○'} At least 8 characters
+                  <li className={`flex items-center gap-2 ${hasMinLength ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <span className={hasMinLength ? 'text-green-600' : 'text-muted-foreground'}>
+                      {hasMinLength ? '✓' : '○'}
+                    </span>
+                    At least 8 characters
                   </li>
-                  <li className={`flex items-center gap-2 ${hasLowerCase ? 'text-green-600' : 'text-gray-500'}`}>
-                    {hasLowerCase ? '✓' : '○'} One lowercase letter
+                  <li className={`flex items-center gap-2 ${hasLowerCase ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <span className={hasLowerCase ? 'text-green-600' : 'text-muted-foreground'}>
+                      {hasLowerCase ? '✓' : '○'}
+                    </span>
+                    One lowercase letter
                   </li>
-                  <li className={`flex items-center gap-2 ${hasUpperCase ? 'text-green-600' : 'text-gray-500'}`}>
-                    {hasUpperCase ? '✓' : '○'} One uppercase letter
+                  <li className={`flex items-center gap-2 ${hasUpperCase ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <span className={hasUpperCase ? 'text-green-600' : 'text-muted-foreground'}>
+                      {hasUpperCase ? '✓' : '○'}
+                    </span>
+                    One uppercase letter
                   </li>
-                  <li className={`flex items-center gap-2 ${hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
-                    {hasNumber ? '✓' : '○'} One number
+                  <li className={`flex items-center gap-2 ${hasNumber ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <span className={hasNumber ? 'text-green-600' : 'text-muted-foreground'}>
+                      {hasNumber ? '✓' : '○'}
+                    </span>
+                    One number
                   </li>
-                  <li className={`flex items-center gap-2 ${hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
-                    {hasSpecialChar ? '✓' : '○'} One special character
+                  <li className={`flex items-center gap-2 ${hasSpecialChar ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <span className={hasSpecialChar ? 'text-green-600' : 'text-muted-foreground'}>
+                      {hasSpecialChar ? '✓' : '○'}
+                    </span>
+                    One special character
                   </li>
                 </ul>
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Update password...' : 'Update password'}
+            <Button type="submit" className="w-full" disabled={isSubmitting} size="lg">
+              {isSubmitting ? 'Updating...' : 'Update password'}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <Link
               to={paths.auth.jwt.signIn}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-primary hover:underline font-medium"
             >
               Return to sign in
             </Link>

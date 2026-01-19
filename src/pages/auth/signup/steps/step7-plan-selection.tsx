@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { updateUser, getSubscriptionPlans, createPaymentIntent } from '@/actions/signup';
 import { useAuthContext } from '@/auth/hooks/use-auth-context';
 import { toast } from 'sonner';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, ArrowLeft, Info } from 'lucide-react';
+import { SELECTED_PLAN, SELECTED_ADD_ONS } from '@/config/config';
 
 interface Step7PlanSelectionProps {
   activeStep: number;
@@ -22,8 +25,11 @@ export function Step7PlanSelection({
   setClientSecret,
 }: Step7PlanSelectionProps) {
   const { checkUserSession } = useAuthContext();
-  const [selectedPlan, setSelectedPlan] = useState<string>('');
-  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+  const existingSelectedPlan = JSON.parse(localStorage.getItem(SELECTED_PLAN) || '{}');
+  const existingSelectedAddOns = JSON.parse(localStorage.getItem(SELECTED_ADD_ONS) || '[]');
+  
+  const [selectedPlan, setSelectedPlan] = useState<any>(existingSelectedPlan || null);
+  const [selectedAddOns, setSelectedAddOns] = useState<any[]>(existingSelectedAddOns || []);
   const [isLoading, setIsLoading] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
   const [addOns, setAddOns] = useState<any[]>([]);
@@ -50,8 +56,13 @@ export function Step7PlanSelection({
           setPlans(sortedPlans);
           setAddOns(filteredAddOns);
           // Auto-select first plan if available and no plan is selected yet
-          if (sortedPlans.length > 0) {
-            setSelectedPlan((prev) => prev || sortedPlans[0].id);
+          if (sortedPlans.length > 0 && !selectedPlan) {
+            setSelectedPlan(sortedPlans[0]);
+          } else if (existingSelectedPlan?.id) {
+            const foundPlan = sortedPlans.find((p: any) => p.id === existingSelectedPlan.id);
+            if (foundPlan) {
+              setSelectedPlan(foundPlan);
+            }
           }
         } else {
           toast.error('Failed to load subscription plans');
@@ -67,6 +78,37 @@ export function Step7PlanSelection({
     fetchPlans();
   }, []);
 
+  const handlePlanChange = (planId: string) => {
+    const plan = plans.find((p: any) => p.id === planId);
+    if (plan) {
+      setSelectedPlan(plan);
+    }
+  };
+
+  const handleAddOnChange = (addOnId: string, checked: boolean) => {
+    if (checked) {
+      const addOn = addOns.find((a: any) => a.id === addOnId);
+      if (addOn) {
+        setSelectedAddOns([...selectedAddOns, addOn]);
+      }
+    } else {
+      setSelectedAddOns(selectedAddOns.filter((a: any) => a.id !== addOnId));
+    }
+  };
+
+  const calculateTotalCost = () => {
+    let total = 0;
+    if (selectedPlan?.price?.unit_amount) {
+      total += selectedPlan.price.unit_amount;
+    }
+    selectedAddOns.forEach((addOn: any) => {
+      if (addOn?.price?.unit_amount) {
+        total += addOn.price.unit_amount;
+      }
+    });
+    return (total / 100).toFixed(2);
+  };
+
   const handleContinue = async () => {
     if (!selectedPlan) {
       toast.error('Please select a plan');
@@ -75,24 +117,20 @@ export function Step7PlanSelection({
 
     setIsLoading(true);
     try {
-      // Get the selected plan and add-on objects
-      const selectedPlanObj = plans.find((p: any) => p.id === selectedPlan);
-      const selectedAddOnObjs = selectedAddOns.map((addOnId: string) => addOns.find((a: any) => a.id === addOnId)).filter(Boolean);
+      // Create payment intent
+      const res = await createPaymentIntent();
       
-      // Create payment intent with selected plan and add-ons
-      const res = await createPaymentIntent({ 
-        planId: selectedPlan,
-        addOns: selectedAddOnObjs,
-      });
+      // Save selected plan and add-ons to localStorage
+      localStorage.setItem(SELECTED_PLAN, JSON.stringify(selectedPlan));
+      localStorage.setItem(SELECTED_ADD_ONS, JSON.stringify(selectedAddOns));
       
-      // Save selected plan and add-ons
-      setSelectedItems([{ plan: selectedPlanObj, addOns: selectedAddOnObjs }]);
+      // Set selected items for payment step
+      setSelectedItems([selectedPlan, ...selectedAddOns]);
       
       // Set client secret if available in response
       if (res?.data?.data?.client_secret) {
         setClientSecret(res.data.data.client_secret);
       } else if (res?.data?.client_secret) {
-        // Alternative response structure
         setClientSecret(res.data.client_secret);
       }
       
@@ -137,58 +175,125 @@ export function Step7PlanSelection({
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {plans.map((plan: any) => {
-          const price = plan.price?.unit_amount ? formatPrice(plan.price.unit_amount) : 'N/A';
-          const isSelected = selectedPlan === plan.id;
-          
-          return (
-            <Card
-              key={plan.id}
-              className={`cursor-pointer transition-all ${
-                isSelected
-                  ? 'ring-2 ring-primary border-primary'
-                  : 'hover:border-primary/50'
-              }`}
-              onClick={() => setSelectedPlan(plan.id)}
-            >
-              <CardHeader>
-                <CardTitle>{plan.name || 'Unnamed Plan'}</CardTitle>
-                <div className="text-3xl font-bold">{price}</div>
-                <CardDescription>
-                  {plan.price?.recurring?.interval === 'month' ? '/month' : '/period'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {plan.description && (
-                  <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
-                )}
-                {plan.metadata?.features && (
-                  <ul className="space-y-2">
-                    {plan.metadata.features.split(',').map((feature: string, idx: number) => (
-                      <li key={idx} className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-primary" />
-                        {feature.trim()}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {isSelected && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="text-xs text-muted-foreground text-center">
-                      Selected
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          localStorage.removeItem(SELECTED_PLAN);
+          localStorage.removeItem(SELECTED_ADD_ONS);
+          setActiveStep(6);
+        }}
+        className="mb-4"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Choose your plan</h3>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Select plan level</Label>
+        <Select
+          value={selectedPlan?.id || ''}
+          onValueChange={handlePlanChange}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a plan" />
+          </SelectTrigger>
+          <SelectContent>
+            {plans.map((plan: any) => (
+              <SelectItem key={plan.id} value={plan.id}>
+                {plan.name} - ${formatPrice(plan.price?.unit_amount || 0)}/month
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {selectedPlan && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-center text-primary">{selectedPlan.name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {Array.isArray(selectedPlan.description) ? (
+                <ul className="list-disc list-inside space-y-1">
+                  {selectedPlan.description.map((item: string, index: number) => (
+                    <li key={index} className="text-sm">{item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm">{selectedPlan.description}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {addOns.length > 0 && (
+        <div className="space-y-4">
+          <Label>Additional options</Label>
+          <div className="space-y-3">
+            {addOns.map((addOn: any) => {
+              const isChecked = selectedAddOns.some((a: any) => a.id === addOn.id);
+              return (
+                <div key={addOn.id} className="flex items-start justify-between p-4 border rounded-lg">
+                  <div className="flex items-start gap-3 flex-1">
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={(checked) => handleAddOnChange(addOn.id, checked as boolean)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`addon-${addOn.id}`} className="font-medium cursor-pointer">
+                          {addOn.name}
+                        </Label>
+                        {addOn.name?.includes('Dedicated') && (
+                          <div className="group relative">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-48 p-2 bg-popover border rounded shadow-lg text-xs z-10">
+                              Get a dedicated IP to improve your email campaign performance.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {addOn.name?.includes('Dedicated') && (
+                        <p className="text-xs text-muted-foreground mt-1 ml-7">
+                          (Request will be processed within 24 hours)
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">${formatPrice(addOn.price?.unit_amount || 0)}/month</p>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {selectedPlan && (
+        <Card className="bg-primary/10 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-2">
+              <p className="text-sm font-medium">Your Plan:</p>
+              <p className="text-2xl font-bold text-primary">{selectedPlan.name}</p>
+              <div className="text-3xl font-bold">${calculateTotalCost()}/month</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Button
         onClick={handleContinue}
-        className="w-full max-w-md mx-auto block"
+        className="w-full"
         disabled={isLoading || !selectedPlan}
       >
         {isLoading ? 'Processing...' : 'Continue to Payment'}

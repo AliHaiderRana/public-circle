@@ -140,3 +140,19 @@ export function getAllTemplateGroups() {
 
   return memoizedValue;
 }
+
+export function getAllCategories() {
+  const url = `${endpoints.templates.allCategories}`;
+
+  const { data, error } = useSWR(url, fetcher, swrOptions);
+
+  const memoizedValue = useMemo(
+    () => ({
+      allCategories: error && (error as any).status === 404 ? [] : data?.data || [],
+      isLoading: !data && !error,
+    }),
+    [data, error]
+  );
+
+  return memoizedValue;
+}
