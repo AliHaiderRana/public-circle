@@ -18,7 +18,43 @@ import { toast } from 'sonner';
 import { REGION_KEY } from '@/config/config';
 import { Country, State, City } from 'country-state-city';
 import { ArrowLeft } from 'lucide-react';
-import validatePostalCode from 'postal-codes-js';
+
+/**
+ * Simple postal code validation by country code
+ * Returns true if valid, false or an object with error if invalid
+ */
+const validatePostalCode = (countryCode: string, postalCode: string): boolean | any => {
+  if (!countryCode || !postalCode) return true;
+  
+  const code = postalCode.trim().toUpperCase();
+  
+  // Common postal code patterns by country
+  const patterns: Record<string, RegExp> = {
+    'US': /^\d{5}(-\d{4})?$/, // US ZIP: 12345 or 12345-6789
+    'CA': /^[A-Z]\d[A-Z] ?\d[A-Z]\d$/, // Canadian postal code: A1A 1A1
+    'GB': /^[A-Z]{1,2}\d{1,2}[A-Z]? ?\d[A-Z]{2}$/i, // UK postcode
+    'AU': /^\d{4}$/, // Australian postcode: 4 digits
+    'DE': /^\d{5}$/, // German postcode: 5 digits
+    'FR': /^\d{5}$/, // French postcode: 5 digits
+    'IT': /^\d{5}$/, // Italian postcode: 5 digits
+    'ES': /^\d{5}$/, // Spanish postcode: 5 digits
+    'NL': /^\d{4} ?[A-Z]{2}$/i, // Dutch postcode: 4 digits + 2 letters
+    'BR': /^\d{5}-?\d{3}$/, // Brazilian CEP: 12345-678
+    'IN': /^\d{6}$/, // Indian PIN: 6 digits
+    'JP': /^\d{3}-?\d{4}$/, // Japanese postcode: 123-4567
+    'CN': /^\d{6}$/, // Chinese postcode: 6 digits
+    'MX': /^\d{5}$/, // Mexican postal code: 5 digits
+    'ZA': /^\d{4}$/, // South African postcode: 4 digits
+  };
+  
+  const pattern = patterns[countryCode];
+  if (!pattern) {
+    // If no pattern exists for country, accept any non-empty string
+    return code.length > 0;
+  }
+  
+  return pattern.test(code);
+};
 
 const schema = z.object({
   country: z.string().min(1, 'Country is required'),
