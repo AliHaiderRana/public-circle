@@ -7,6 +7,32 @@ import { toast } from 'sonner';
 
 const enableServer = true;
 
+// SWR Cache Keys
+const SWR_KEYS = {
+  invalidEmails: '/company-contacts/invalid-emails',
+  unsubscribedEmails: '/company-contacts/un-subscribed-count',
+  applePrivateContacts: '/company-contacts/apple-private-contacts-count',
+  complaintUsers: '/company-contacts/complaint-users-count',
+  primaryKey: '/company-contacts/primary-key',
+  primaryKeyRequest: '/company-contacts/customer-requests?type=EDIT_CONTACTS_PRIMARY_KEY',
+  emailKeyRequest: '/company-contacts/customer-requests?type=EDIT_CONTACTS_EMAIL_KEY',
+  filtersRequest: '/company-contacts/customer-requests?type=EDIT_CONTACTS_FILTERS',
+};
+
+// Function to refresh all contacts-related SWR data
+export async function refreshContactsData() {
+  await Promise.all([
+    mutate(SWR_KEYS.invalidEmails),
+    mutate(SWR_KEYS.unsubscribedEmails),
+    mutate(SWR_KEYS.applePrivateContacts),
+    mutate(SWR_KEYS.complaintUsers),
+    mutate(SWR_KEYS.primaryKey),
+    mutate(SWR_KEYS.primaryKeyRequest),
+    mutate(SWR_KEYS.emailKeyRequest),
+    mutate(SWR_KEYS.filtersRequest),
+  ]);
+}
+
 const swrOptions = {
   revalidateIfStale: enableServer,
   revalidateOnFocus: enableServer,
@@ -211,7 +237,7 @@ export function getInvalidEmailCount() {
 
   const memoizedValue = useMemo(
     () => ({
-      InvalidEmailCount: data?.data?.invalidEmailCount || 0,
+      InvalidEmailCount: data?.data?.count || 0,
       DuplicatedCount: data?.data?.duplicatedCount || 0,
     }),
     [data]
@@ -221,12 +247,12 @@ export function getInvalidEmailCount() {
 }
 
 export function getUnSubscribedEmailCount() {
-  const url = '/company-contacts/unsubscribed-emails';
+  const url = '/company-contacts/un-subscribed-count';
   const { data } = useSWR(url, fetcher, swrOptions);
 
   const memoizedValue = useMemo(
     () => ({
-      UnSubscribedEmailCount: data?.data?.unSubscribedEmailCount || 0,
+      UnSubscribedEmailCount: data?.data || 0,
     }),
     [data]
   );
@@ -235,12 +261,26 @@ export function getUnSubscribedEmailCount() {
 }
 
 export function getApplePrivateContactsCount() {
-  const url = '/company-contacts/apple-private-contacts';
+  const url = '/company-contacts/apple-private-contacts-count';
   const { data } = useSWR(url, fetcher, swrOptions);
 
   const memoizedValue = useMemo(
     () => ({
-      ApplePrivateContactsCount: data?.data?.applePrivateContactsCount || 0,
+      ApplePrivateContactsCount: data?.data || 0,
+    }),
+    [data]
+  );
+
+  return memoizedValue;
+}
+
+export function getComplaintUsersCount() {
+  const url = '/company-contacts/complaint-users-count';
+  const { data } = useSWR(url, fetcher, swrOptions);
+
+  const memoizedValue = useMemo(
+    () => ({
+      ComplaintUsersCount: data?.data || 0,
     }),
     [data]
   );
@@ -263,7 +303,7 @@ export interface DuplicateContactsResponse {
 
 export async function getDuplicateContacts(page: number = 1): Promise<DuplicateContactsResponse | null> {
   try {
-    const response = await axios.get(`/company-contacts/duplicate-contacts?page=${page}`);
+    const response = await axios.get(`/company-contacts/duplicates?pageNumber=${page}&pageSize=10`);
     return {
       duplicateContacts: response.data?.data?.duplicateContacts || [],
       totalRecords: response.data?.data?.totalRecords || 0,
@@ -281,6 +321,8 @@ export async function resolveDuplicates(params: {
   try {
     const response = await axios.post('/company-contacts/resolve-duplicates', params);
     toast.success(response?.data?.message || 'Duplicates resolved successfully');
+    // Refresh SWR data after resolving duplicates
+    await refreshContactsData();
     return response;
   } catch (error: any) {
     console.error('Error resolving duplicates:', error);

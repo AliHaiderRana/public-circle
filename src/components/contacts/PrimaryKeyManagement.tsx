@@ -170,30 +170,35 @@ export function PrimaryKeyManagement({
           <LoadingState />
         ) : (
           <div className="space-y-4">
+            {/* Current Primary Key Display */}
             {currentKey && (
-              <div className="space-y-2">
-                <Label>Current Primary Key</Label>
-                <div className="text-sm text-muted-foreground">{currentKey}</div>
+              <div className="flex items-center gap-2">
+                <Label>Current Primary Key:</Label>
+                <span className="text-sm font-medium">{currentKey}</span>
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="primary-key">Select Primary Key</Label>
-              <Select value={selectedKey} onValueChange={setSelectedKey}>
-                <SelectTrigger id="primary-key">
-                  <SelectValue placeholder="Select a field" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filterKeys.map((key: string) => (
-                    <SelectItem key={key} value={key}>
-                      {key}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Select Primary Key - Only show when NOT locked */}
+            {!isLocked && (
+              <div className="space-y-2">
+                <Label htmlFor="primary-key">Select Primary Key</Label>
+                <Select value={selectedKey} onValueChange={setSelectedKey}>
+                  <SelectTrigger id="primary-key">
+                    <SelectValue placeholder="Select a field" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filterKeys.map((key: string) => (
+                      <SelectItem key={key} value={key}>
+                        {key}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            {selectedKey && selectedKey !== currentKey && (
+            {/* Effect Preview - Only show when NOT locked and key changed */}
+            {!isLocked && selectedKey && selectedKey !== currentKey && (
               <div className="space-y-2">
                 <Button variant="outline" onClick={handlePreview} disabled={isLoading}>
                   Preview Effect
@@ -211,11 +216,11 @@ export function PrimaryKeyManagement({
 
             {/* Locked State Warning */}
             {isLocked && !hasPendingRequest && (
-              <div className="rounded-lg border border-warning/50 bg-warning/10 p-4">
+              <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-warning" />
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
                   <div>
-                    <p className="text-sm font-medium text-warning">
+                    <p className="text-sm font-medium text-amber-600">
                       Primary key is locked
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -228,12 +233,12 @@ export function PrimaryKeyManagement({
 
             {/* Pending Request Badge */}
             {hasPendingRequest && (
-              <div className="rounded-lg border border-info/50 bg-info/10 p-4">
+              <div className="rounded-lg border border-blue-500/50 bg-blue-500/10 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <RotateCcw className="h-4 w-4 text-info" />
+                    <RotateCcw className="h-4 w-4 text-blue-500" />
                     <div>
-                      <p className="text-sm font-medium">Revert request pending</p>
+                      <p className="text-sm font-medium text-blue-600">Revert request pending</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Waiting for approval
                       </p>
@@ -269,12 +274,14 @@ export function PrimaryKeyManagement({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button
-                onClick={handleSave}
-                disabled={!selectedKey || isLoading || isLocked}
-              >
-                {isLoading ? 'Saving...' : 'Save'}
-              </Button>
+              {!isLocked && (
+                <Button
+                  onClick={handleSave}
+                  disabled={!selectedKey || isLoading}
+                >
+                  {isLoading ? 'Saving...' : 'Save'}
+                </Button>
+              )}
             </DialogFooter>
           </div>
         )}

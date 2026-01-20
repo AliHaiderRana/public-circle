@@ -7,6 +7,7 @@ import { paths } from './paths';
 import { useAuthContext } from '@/auth/hooks/use-auth-context';
 import { lazy, Suspense } from 'react';
 import { LoadingState } from '@/components/ui/loading-state';
+import { usePageTitle } from '@/hooks/use-page-title';
 
 // Unsubscribe page
 const UnSubscribePage = lazy(() => import('@/pages/un-subscribe'));
@@ -49,6 +50,8 @@ function RootRedirect() {
  * - Utility routes (unsubscribe, etc.)
  */
 export function AppRouter() {
+  usePageTitle();
+
   const routes = useRoutes([
     // Root redirect - check auth state first
     // This will redirect authenticated users to dashboard

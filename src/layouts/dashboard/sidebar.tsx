@@ -22,16 +22,20 @@ interface NavItemProps {
  * Check if a route is active based on exact match or path prefix
  * Handles nested routes by checking if pathname starts with the item path
  */
-function isRouteActive(itemPath: string | undefined, pathname: string): boolean {
+function isRouteActive(itemPath: string | undefined, pathname: string, hasChildren?: boolean): boolean {
   if (!itemPath) return false;
-  
+
   // Exact match
   if (itemPath === pathname) return true;
-  
+
+  // If item has children, only exact match should mark it as active
+  // This prevents parent items from appearing active when a child is active
+  if (hasChildren) return false;
+
   // Check if pathname starts with item path (for nested routes)
   // e.g., /dashboard/campaign/123 should match /dashboard/campaign
   if (pathname.startsWith(itemPath + '/')) return true;
-  
+
   return false;
 }
 
@@ -47,18 +51,18 @@ function hasActiveChild(children: NavItem[] | undefined, pathname: string): bool
 }
 
 function NavItemComponent({ item, pathname, level = 0, onNavigate }: NavItemProps) {
-  const isChildActive = hasActiveChild(item.children, pathname);
-  const [isOpen, setIsOpen] = useState(isChildActive || false);
-  const isActive = isRouteActive(item.path, pathname);
-  const isParentActive = isChildActive && !isActive; // Parent is active if child is active but not exact match
   const hasChildren = item.children && item.children.length > 0;
-  
-  // Auto-expand if child becomes active
+  const isChildActive = hasActiveChild(item.children, pathname);
+  const isActive = isRouteActive(item.path, pathname, hasChildren);
+  const isParentActive = isChildActive && !isActive; // Parent is active if child is active but not exact match
+
+  // Only expand if this item or its children are active
+  const [isOpen, setIsOpen] = useState(isChildActive || isActive);
+
+  // Auto-expand/collapse based on active state
   useEffect(() => {
-    if (isChildActive) {
-      setIsOpen(true);
-    }
-  }, [isChildActive]);
+    setIsOpen(isChildActive || isActive);
+  }, [isChildActive, isActive]);
 
   const handleNavigation = () => {
     // Close mobile menu on navigation
@@ -176,7 +180,6 @@ interface NavSectionProps {
   items: NavItem[];
   pathname: string;
   isCollapsible?: boolean;
-  defaultOpen?: boolean;
   onNavigate?: () => void;
 }
 
@@ -184,10 +187,8 @@ interface NavSectionProps {
  * Navigation Section Component
  * Displays a collapsible section of navigation items
  */
-function NavSection({ subheader, items, pathname, isCollapsible = true, defaultOpen = true, onNavigate }: NavSectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  
-  // Auto-expand if any item in section is active
+function NavSection({ subheader, items, pathname, isCollapsible = true, onNavigate }: NavSectionProps) {
+  // Check if any item in section is active
   const hasActiveItem = useMemo(() => {
     return items.some((item) => {
       if (isRouteActive(item.path, pathname)) return true;
@@ -195,10 +196,12 @@ function NavSection({ subheader, items, pathname, isCollapsible = true, defaultO
     });
   }, [items, pathname]);
 
+  // Only expand section if it has active item
+  const [isOpen, setIsOpen] = useState(hasActiveItem);
+
+  // Auto-expand/collapse based on active state
   useEffect(() => {
-    if (hasActiveItem) {
-      setIsOpen(true);
-    }
+    setIsOpen(hasActiveItem);
   }, [hasActiveItem]);
 
   return (
@@ -305,7 +308,6 @@ export function DashboardSidebar({ onNavigate }: DashboardSidebarProps) {
               items={section.items}
               pathname={pathname}
               isCollapsible={true}
-              defaultOpen={true}
               onNavigate={onNavigate}
             />
             {index < filteredNavData.length - 1 && <Separator className="my-4" />}

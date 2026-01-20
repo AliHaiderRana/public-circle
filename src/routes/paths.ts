@@ -82,6 +82,13 @@ export const paths = {
       edit: (id: string) => `${ROOTS.DASHBOARD}/audience/${id}/edit`,
     },
 
+    // Contacts routes
+    contacts: {
+      root: `${ROOTS.DASHBOARD}/contacts`,
+      list: `${ROOTS.DASHBOARD}/contacts/list`,
+      import: `${ROOTS.DASHBOARD}/contacts/import`,
+    },
+
     // Configuration routes
     configurations: {
       root: `${ROOTS.DASHBOARD}/configurations`,

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useState } from 'react';
 import { GripVertical } from 'lucide-react';
+import { formatKeyName } from '@/lib/format-key';
 
 interface TableCustomizationProps {
   open: boolean;
@@ -93,8 +94,8 @@ export function TableCustomization({
                           checked={true}
                           onCheckedChange={() => handleToggleKey(key, false)}
                         />
-                        <Label htmlFor={`visible-${key}`} className="cursor-pointer capitalize flex-1">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
+                        <Label htmlFor={`visible-${key}`} className="cursor-pointer flex-1">
+                          {formatKeyName(key)}
                         </Label>
                       </div>
                     ))
@@ -114,8 +115,8 @@ export function TableCustomization({
                           checked={false}
                           onCheckedChange={() => handleToggleKey(key, true)}
                         />
-                        <Label htmlFor={`available-${key}`} className="cursor-pointer capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
+                        <Label htmlFor={`available-${key}`} className="cursor-pointer">
+                          {formatKeyName(key)}
                         </Label>
                       </div>
                     ))}

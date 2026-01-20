@@ -55,7 +55,7 @@ export default function ContactsImportPage() {
       }, 200);
 
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('csvFile', file);
       
       await axios.post('/company-contacts/upload-csv', formData, {
         headers: {
@@ -71,7 +71,7 @@ export default function ContactsImportPage() {
       
       // Navigate to contacts list after successful upload
       setTimeout(() => {
-        navigate(paths.dashboard.configurations?.contacts || '/dashboard/configurations/contacts');
+        navigate(paths.dashboard.contacts.list);
       }, 1000);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to upload contacts');
@@ -93,7 +93,7 @@ export default function ContactsImportPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => navigate(paths.dashboard.configurations?.contacts || '/dashboard/configurations/contacts')}>
+        <Button variant="outline" onClick={() => navigate(paths.dashboard.contacts.list)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Contacts
         </Button>

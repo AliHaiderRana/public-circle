@@ -14,18 +14,12 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Contact } from '@/actions/contacts';
 import { cn } from '@/lib/utils';
+import { formatKeyName } from '@/lib/format-key';
 
 interface ViewContactDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contact: Contact | null;
-}
-
-function formatKeyName(key: string): string {
-  return key
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, (str) => str.toUpperCase())
-    .trim();
 }
 
 function formatValue(value: any): React.ReactNode {

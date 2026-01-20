@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -8,17 +9,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -26,10 +27,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { EmptyState } from '@/components/ui/empty-state';
-import { LoadingState } from '@/components/ui/loading-state';
-import { toast } from 'sonner';
+} from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
+import { toast } from "sonner";
 import {
   RefreshCw,
   Trash2,
@@ -43,7 +44,7 @@ import {
   Users,
   AlertCircle,
   CheckCircle2,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   getPaginatedContacts,
   deleteContact,
@@ -51,20 +52,23 @@ import {
   getInvalidEmailCount,
   getUnSubscribedEmailCount,
   getApplePrivateContactsCount,
+  getComplaintUsersCount,
   finalizeContacts,
+  refreshContactsData,
   type ContactFilter,
-} from '@/actions/contacts';
-import { paths } from '@/routes/paths';
-import { ContactSearch } from '@/components/contacts/ContactSearch';
-import { ContactTableRow } from '@/components/contacts/ContactTableRow';
-import { TableCustomization } from '@/components/contacts/TableCustomization';
-import { PrimaryKeyManagement } from '@/components/contacts/PrimaryKeyManagement';
-import { EmailKeyManagement } from '@/components/contacts/EmailKeyManagement';
-import { ContactMerger } from '@/components/contacts/ContactMerger';
-import { FilterSection } from '@/components/contacts/FilterSection';
-import { ExportContactsDialog } from '@/components/contacts/ExportContactsDialog';
-import { LoadingButton } from '@/components/ui/loading-button';
-import { useAuthContext } from '@/auth/hooks/use-auth-context';
+} from "@/actions/contacts";
+import { paths } from "@/routes/paths";
+import { ContactSearch } from "@/components/contacts/ContactSearch";
+import { ContactTableRow } from "@/components/contacts/ContactTableRow";
+import { TableCustomization } from "@/components/contacts/TableCustomization";
+import { PrimaryKeyManagement } from "@/components/contacts/PrimaryKeyManagement";
+import { EmailKeyManagement } from "@/components/contacts/EmailKeyManagement";
+import { ContactMerger } from "@/components/contacts/ContactMerger";
+import { ExportContactsDialog } from "@/components/contacts/ExportContactsDialog";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { useAuthContext } from "@/auth/hooks/use-auth-context";
+import { getAllConfigurations } from "@/actions/configurations";
+import { formatKeyName } from "@/lib/format-key";
 
 export default function ContactsListPage() {
   const [contacts, setContacts] = useState<any[]>([]);
@@ -90,19 +94,29 @@ export default function ContactsListPage() {
   const [openExportDialog, setOpenExportDialog] = useState(false);
   const [openFinalizeDialog, setOpenFinalizeDialog] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
-  
+
   const { user, checkUserSession } = useAuthContext();
   const isContactFinalized = user?.company?.isContactFinalize;
 
   const { InvalidEmailCount, DuplicatedCount } = getInvalidEmailCount();
   const { UnSubscribedEmailCount } = getUnSubscribedEmailCount();
+  const { appleRelayVerified } = getAllConfigurations();
   const { ApplePrivateContactsCount } = getApplePrivateContactsCount();
+  const { ComplaintUsersCount } = getComplaintUsersCount();
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     fetchContacts();
-  }, [page, rowsPerPage, searchFilters, invalidEmailsChecked, unsubscribedChecked, applePrivateChecked, complaintUsersChecked]);
+  }, [
+    page,
+    rowsPerPage,
+    searchFilters,
+    invalidEmailsChecked,
+    unsubscribedChecked,
+    applePrivateChecked,
+    complaintUsersChecked,
+  ]);
 
   const fetchContacts = async () => {
     // Cancel previous request
@@ -122,8 +136,10 @@ export default function ContactsListPage() {
           isUnSubscribed: unsubscribedChecked,
           isInvalidEmail: invalidEmailsChecked,
           isPrivateRelayEmail: applePrivateChecked,
-          ...(complaintUsersChecked && { unSubscribedReason: 'UN_SUBSCRIBED_BY_COMPLAINT' }),
-        }
+          ...(complaintUsersChecked && {
+            unSubscribedReason: "UN_SUBSCRIBED_BY_COMPLAINT",
+          }),
+        },
       );
 
       setContacts(response.data || []);
@@ -131,13 +147,13 @@ export default function ContactsListPage() {
 
       // Set visible keys from first contact if available
       if (response.data?.length > 0) {
-        const keys = Object.keys(response.data[0]).filter((k) => k !== '__v');
+        const keys = Object.keys(response.data[0]).filter((k) => k !== "__v");
         setVisibleKeys(keys.slice(0, 8));
       }
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error('Error fetching contacts:', error);
-        toast.error('Failed to fetch contacts');
+      if (error.name !== "AbortError") {
+        console.error("Error fetching contacts:", error);
+        toast.error("Failed to fetch contacts");
       }
     } finally {
       setIsLoading(false);
@@ -148,9 +164,9 @@ export default function ContactsListPage() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await fetchContacts();
+      await Promise.all([fetchContacts(), refreshContactsData()]);
     } catch (error) {
-      console.error('Error refreshing contacts:', error);
+      console.error("Error refreshing contacts:", error);
     } finally {
       setTimeout(() => setIsRefreshing(false), 1000);
     }
@@ -164,7 +180,7 @@ export default function ContactsListPage() {
       await checkUserSession?.();
       fetchContacts();
     } catch (error) {
-      console.error('Error finalizing contacts:', error);
+      console.error("Error finalizing contacts:", error);
     } finally {
       setIsFinalizing(false);
     }
@@ -177,10 +193,12 @@ export default function ContactsListPage() {
       await deleteContact(contactToDelete);
       setOpenDeleteDialog(false);
       setContactToDelete(null);
-      setSelectedContacts(selectedContacts.filter((id) => id !== contactToDelete));
+      setSelectedContacts(
+        selectedContacts.filter((id) => id !== contactToDelete),
+      );
       fetchContacts();
     } catch (error) {
-      console.error('Error deleting contact:', error);
+      console.error("Error deleting contact:", error);
     }
   };
 
@@ -193,7 +211,7 @@ export default function ContactsListPage() {
       setSelectedContacts([]);
       fetchContacts();
     } catch (error) {
-      console.error('Error deleting contacts:', error);
+      console.error("Error deleting contacts:", error);
     }
   };
 
@@ -209,34 +227,59 @@ export default function ContactsListPage() {
     if (checked) {
       setSelectedContacts([...selectedContacts, id]);
     } else {
-      setSelectedContacts(selectedContacts.filter((contactId) => contactId !== id));
+      setSelectedContacts(
+        selectedContacts.filter((contactId) => contactId !== id),
+      );
     }
   };
 
-  const allSelected = contacts.length > 0 && selectedContacts.length === contacts.length;
-  const someSelected = selectedContacts.length > 0 && selectedContacts.length < contacts.length;
+  const allSelected =
+    contacts.length > 0 && selectedContacts.length === contacts.length;
+  const someSelected =
+    selectedContacts.length > 0 && selectedContacts.length < contacts.length;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Contacts</h1>
-          <p className="text-muted-foreground mt-1">Manage your contacts, configure keys, and resolve duplicates</p>
+          <h1 className="text-3xl font-extrabold">Contacts</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your contacts, configure keys, and resolve duplicates.{" "}
+            <a
+              href={paths.dashboard.configurations.webhooks}
+              className="text-primary hover:underline"
+            >
+              Webhooks
+            </a>
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isRefreshing}>
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
           </Button>
           <Button variant="outline" onClick={() => setOpenExportDialog(true)}>
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button variant="outline" onClick={() => setOpenTableCustomization(true)}>
+          <Button
+            variant="outline"
+            onClick={() => setOpenTableCustomization(true)}
+          >
             <Settings className="mr-2 h-4 w-4" />
             Customize Table
           </Button>
-          <Button variant="outline" onClick={() => setOpenPrimaryKeyDialog(true)}>
+          <Button
+            variant="outline"
+            onClick={() => setOpenPrimaryKeyDialog(true)}
+          >
             <Key className="mr-2 h-4 w-4" />
             Primary Key
           </Button>
@@ -244,39 +287,39 @@ export default function ContactsListPage() {
             <Mail className="mr-2 h-4 w-4" />
             Email Key
           </Button>
-          <Button variant="outline" onClick={() => setOpenMergerDialog(true)}>
-            <Users className="mr-2 h-4 w-4" />
-            Duplicates
-          </Button>
+          {DuplicatedCount > 0 && (
+            <Button variant="outline" onClick={() => setOpenMergerDialog(true)}>
+              <Users className="mr-2 h-4 w-4" />
+              Duplicates ({DuplicatedCount})
+            </Button>
+          )}
           <Button variant="outline" asChild>
-            <a href={paths.dashboard.configurations?.contacts || '#'}>
+            <a href={paths.dashboard.contacts.import}>
               <Upload className="mr-2 h-4 w-4" />
               Import CSV
             </a>
           </Button>
-          {!isContactFinalized && (
+          {!isContactFinalized && DuplicatedCount === 0 && totalCount > 0 && (
             <Button onClick={() => setOpenFinalizeDialog(true)}>
               <CheckCircle2 className="mr-2 h-4 w-4" />
               Finalize Contacts
             </Button>
           )}
-          {isContactFinalized && (
-            <Badge variant="outline" className="px-3 py-1.5">
-              <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
-              Contacts Finalized
-            </Badge>
-          )}
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Contacts</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Contacts
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalCount.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {totalCount.toLocaleString()}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -304,24 +347,36 @@ export default function ContactsListPage() {
             <CardTitle className="text-sm font-medium">Unsubscribed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{UnSubscribedEmailCount.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {UnSubscribedEmailCount.toLocaleString()}
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Apple Private Relay</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Apple Private Relay
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{ApplePrivateContactsCount.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {ApplePrivateContactsCount.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">
+              Contacts Who Complained
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {ComplaintUsersCount.toLocaleString()}
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Filter Section */}
-      <FilterSection onCriteriaChange={(criteria) => {
-        // Handle selection criteria change
-        console.log('Selection criteria:', criteria);
-      }} />
 
       {/* Search & Filters */}
       <ContactSearch
@@ -365,10 +420,6 @@ export default function ContactsListPage() {
       <Card>
         <CardHeader>
           <CardTitle>All Contacts</CardTitle>
-          <CardDescription>
-            Manage your contact list. Total: {totalCount.toLocaleString()} contact
-            {totalCount !== 1 ? 's' : ''}
-          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading && contacts.length === 0 ? (
@@ -378,54 +429,56 @@ export default function ContactsListPage() {
               title="No contacts found"
               description="Get started by importing contacts from a CSV file"
               action={{
-                label: 'Import CSV',
-                onClick: () => window.location.href = paths.dashboard.configurations?.contacts || '#',
+                label: "Import CSV",
+                onClick: () =>
+                  (window.location.href = paths.dashboard.contacts.import),
               }}
             />
           ) : (
             <div className="rounded-md border overflow-hidden">
               <div className="overflow-x-auto">
                 <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50 sticky top-0 z-20">
-                    <TableHead className="w-12 sticky left-0 bg-muted/50 z-30 border-r">
-                      <Checkbox
-                        checked={allSelected}
-                        onCheckedChange={handleSelectAll}
-                        aria-label="Select all"
-                        className="cursor-pointer"
-                      />
-                    </TableHead>
-                    {visibleKeys.map((key) => (
-                      <TableHead key={key} className="capitalize whitespace-nowrap">
-                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={allSelected}
+                          onCheckedChange={handleSelectAll}
+                          aria-label="Select all"
+                          className="cursor-pointer"
+                        />
                       </TableHead>
+                      {visibleKeys.map((key) => (
+                        <TableHead key={key} className="whitespace-nowrap">
+                          {formatKeyName(key)}
+                        </TableHead>
+                      ))}
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contacts.map((contact) => (
+                      <ContactTableRow
+                        key={contact._id}
+                        contact={contact}
+                        visibleKeys={visibleKeys}
+                        isSelected={selectedContacts.includes(contact._id)}
+                        onSelect={(checked) =>
+                          handleSelectContact(contact._id, checked)
+                        }
+                        onDelete={() => {
+                          setContactToDelete(contact._id);
+                          setOpenDeleteDialog(true);
+                        }}
+                        onEdit={(updatedContact) => {
+                          // Handle edit - will be implemented
+                          console.log("Edit contact:", updatedContact);
+                        }}
+                        isAppleRelayVerified={appleRelayVerified}
+                      />
                     ))}
-                    <TableHead className="text-right sticky right-0 bg-muted/50 z-30 border-l">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {contacts.map((contact) => (
-                    <ContactTableRow
-                      key={contact._id}
-                      contact={contact}
-                      visibleKeys={visibleKeys}
-                      isSelected={selectedContacts.includes(contact._id)}
-                      onSelect={(checked) => handleSelectContact(contact._id, checked)}
-                      onDelete={() => {
-                        setContactToDelete(contact._id);
-                        setOpenDeleteDialog(true);
-                      }}
-                      onEdit={(updatedContact) => {
-                        // Handle edit - will be implemented
-                        console.log('Edit contact:', updatedContact);
-                      }}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           )}
@@ -435,12 +488,25 @@ export default function ContactsListPage() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <div className="text-sm text-muted-foreground whitespace-nowrap">
-                  Showing <span className="font-medium text-foreground">{page * rowsPerPage + 1}</span> to{' '}
-                  <span className="font-medium text-foreground">{Math.min((page + 1) * rowsPerPage, totalCount)}</span> of{' '}
-                  <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span> contacts
+                  Showing{" "}
+                  <span className="font-medium text-foreground">
+                    {page * rowsPerPage + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium text-foreground">
+                    {Math.min((page + 1) * rowsPerPage, totalCount)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium text-foreground">
+                    {totalCount.toLocaleString()}
+                  </span>{" "}
+                  contacts
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="rows-per-page" className="text-sm whitespace-nowrap">
+                  <Label
+                    htmlFor="rows-per-page"
+                    className="text-sm whitespace-nowrap"
+                  >
                     Rows per page:
                   </Label>
                   <Select
@@ -473,8 +539,14 @@ export default function ContactsListPage() {
                   Previous
                 </Button>
                 <div className="text-sm text-muted-foreground px-3 py-1.5 bg-muted rounded-md whitespace-nowrap">
-                  Page <span className="font-medium text-foreground">{page + 1}</span> of{' '}
-                  <span className="font-medium text-foreground">{Math.ceil(totalCount / rowsPerPage)}</span>
+                  Page{" "}
+                  <span className="font-medium text-foreground">
+                    {page + 1}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium text-foreground">
+                    {Math.ceil(totalCount / rowsPerPage)}
+                  </span>
                 </div>
                 <Button
                   variant="outline"
@@ -497,11 +569,15 @@ export default function ContactsListPage() {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this contact? This action cannot be undone.
+              Are you sure you want to delete this contact? This action cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenDeleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setOpenDeleteDialog(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
@@ -512,17 +588,23 @@ export default function ContactsListPage() {
       </Dialog>
 
       {/* Bulk Delete Dialog */}
-      <Dialog open={openBulkDeleteDialog} onOpenChange={setOpenBulkDeleteDialog}>
+      <Dialog
+        open={openBulkDeleteDialog}
+        onOpenChange={setOpenBulkDeleteDialog}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Bulk Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {selectedContacts.length} contact(s)? This action
-              cannot be undone.
+              Are you sure you want to delete {selectedContacts.length}{" "}
+              contact(s)? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenBulkDeleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setOpenBulkDeleteDialog(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleBulkDelete}>
@@ -580,7 +662,9 @@ export default function ContactsListPage() {
           isUnSubscribed: unsubscribedChecked,
           isInvalidEmail: invalidEmailsChecked,
           isPrivateRelayEmail: applePrivateChecked,
-          ...(complaintUsersChecked && { unSubscribedReason: 'UN_SUBSCRIBED_BY_COMPLAINT' }),
+          ...(complaintUsersChecked && {
+            unSubscribedReason: "UN_SUBSCRIBED_BY_COMPLAINT",
+          }),
         }}
       />
 
@@ -590,8 +674,8 @@ export default function ContactsListPage() {
           <DialogHeader>
             <DialogTitle>Finalize Contact List</DialogTitle>
             <DialogDescription>
-              This list will be used when the campaign runs. You can still make updates before the
-              campaign starts.
+              This list will be used when the campaign runs. You can still make
+              updates before the campaign starts.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -602,7 +686,10 @@ export default function ContactsListPage() {
             >
               Cancel
             </Button>
-            <LoadingButton onClick={handleFinalizeContacts} loading={isFinalizing}>
+            <LoadingButton
+              onClick={handleFinalizeContacts}
+              loading={isFinalizing}
+            >
               <CheckCircle2 className="mr-2 h-4 w-4" />
               Finalize
             </LoadingButton>

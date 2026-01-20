@@ -184,21 +184,32 @@ export const dashboardRoutes: RouteObject[] = [
         ],
       },
       
+      // Contacts routes - nested structure
+      {
+        path: 'contacts',
+        children: [
+          {
+            index: true,
+            element: <Navigate to={paths.dashboard.contacts.list} replace />,
+          },
+          {
+            path: 'list',
+            element: <ContactsListManagementPage />,
+          },
+          {
+            path: 'import',
+            element: <ContactsImportPage />,
+          },
+        ],
+      },
+
       // Configuration routes - nested structure
       {
         path: 'configurations',
         children: [
           {
             index: true,
-            element: <Navigate to={paths.dashboard.configurations.contacts} replace />,
-          },
-          {
-            path: 'contacts',
-            element: <ContactsListManagementPage />,
-          },
-          {
-            path: 'contacts/import',
-            element: <ContactsImportPage />,
+            element: <Navigate to={paths.dashboard.configurations.emailConfiguration} replace />,
           },
           {
             path: 'emailConfiguration',

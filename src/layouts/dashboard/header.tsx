@@ -23,7 +23,6 @@ import { SesStatusBadge } from '@/components/ses-status/ses-status-badge';
 import { SesStatusDialog } from '@/components/ses-status/ses-status-dialog';
 import { SubscriptionStatusAlert } from '@/components/subscription/subscription-status-alert';
 import { getActiveSubscription } from '@/actions/payments';
-import { Logo } from '@/components/logo';
 import { CompanyLogo } from '@/components/company-logo';
 
 export function DashboardHeader() {
@@ -79,16 +78,6 @@ export function DashboardHeader() {
             />
           </SheetContent>
         </Sheet>
-
-        {/* Logo - Desktop */}
-        <div className="hidden md:flex items-center gap-3">
-          <Logo isSingle={true} width={28} height={28} />
-        </div>
-
-        {/* Logo - Mobile */}
-        <div className="flex items-center gap-2 md:hidden">
-          <Logo isSingle={true} width={24} height={24} />
-        </div>
 
         {/* Right side actions */}
         <div className="flex items-center gap-2 ml-auto">

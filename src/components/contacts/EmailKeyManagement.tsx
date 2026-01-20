@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { AlertCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
@@ -62,8 +61,15 @@ export function EmailKeyManagement({
     key.toLowerCase().includes('email')
   );
 
-  const isLocked = user?.company?.isContactEmailKeyLocked;
+  const currentEmailKey = user?.company?.emailKey;
+  const isLocked = user?.company?.isContactEmailLocked;
   const hasPendingRequest = emailKeyRequest?.requestStatus === 'PENDING';
+
+  useEffect(() => {
+    if (open && currentEmailKey) {
+      setSelectedKey(currentEmailKey);
+    }
+  }, [open, currentEmailKey]);
 
   const handleSave = async () => {
     if (!selectedKey) {
@@ -112,7 +118,7 @@ export function EmailKeyManagement({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Email Key Management</DialogTitle>
           <DialogDescription>
@@ -121,45 +127,57 @@ export function EmailKeyManagement({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Current Email Key Display */}
+          {currentEmailKey && (
+            <div className="flex items-center gap-2">
+              <Label>Current Email Key:</Label>
+              <span className="text-sm font-medium">{currentEmailKey}</span>
+            </div>
+          )}
+
+          {/* Invalid Email Warning */}
           {invalidEmailCount > 0 && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-destructive" />
                 <div>
                   <p className="text-sm font-medium text-destructive">
-                    {invalidEmailCount} invalid email(s) detected
+                    {invalidEmailCount} invalid email{invalidEmailCount > 1 ? 's' : ''} detected
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Review and fix invalid emails to improve deliverability
+                    Please resolve them by changing your primary key to an email key.
                   </p>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="email-key">Select Email Key</Label>
-            <Select value={selectedKey} onValueChange={setSelectedKey}>
-              <SelectTrigger id="email-key">
-                <SelectValue placeholder="Select email field" />
-              </SelectTrigger>
-              <SelectContent>
-                {emailKeys.map((key: string) => (
-                  <SelectItem key={key} value={key}>
-                    {key}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Select Email Key - Only show when NOT locked */}
+          {!isLocked && (
+            <div className="space-y-2">
+              <Label htmlFor="email-key">Select Email Key</Label>
+              <Select value={selectedKey} onValueChange={setSelectedKey}>
+                <SelectTrigger id="email-key">
+                  <SelectValue placeholder="Select email field" />
+                </SelectTrigger>
+                <SelectContent>
+                  {emailKeys.map((key: string) => (
+                    <SelectItem key={key} value={key}>
+                      {key}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Locked State Warning */}
           {isLocked && !hasPendingRequest && (
-            <div className="rounded-lg border border-warning/50 bg-warning/10 p-4">
+            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-warning" />
+                <AlertCircle className="h-4 w-4 text-amber-500" />
                 <div>
-                  <p className="text-sm font-medium text-warning">Email key is locked</p>
+                  <p className="text-sm font-medium text-amber-600">Email key is locked</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Request a revert to make changes
                   </p>
@@ -170,13 +188,15 @@ export function EmailKeyManagement({
 
           {/* Pending Request Badge */}
           {hasPendingRequest && (
-            <div className="rounded-lg border border-info/50 bg-info/10 p-4">
+            <div className="rounded-lg border border-blue-500/50 bg-blue-500/10 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <RotateCcw className="h-4 w-4 text-info" />
+                  <RotateCcw className="h-4 w-4 text-blue-500" />
                   <div>
-                    <p className="text-sm font-medium">Revert request pending</p>
-                    <p className="text-xs text-muted-foreground mt-1">Waiting for approval</p>
+                    <p className="text-sm font-medium text-blue-600">Revert request pending</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Waiting for approval
+                    </p>
                   </div>
                 </div>
                 <Button
@@ -193,78 +213,83 @@ export function EmailKeyManagement({
 
           <DialogFooter>
             {isLocked && !hasPendingRequest && (
-              <Button variant="outline" onClick={() => setIsRevertDialogOpen(true)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsRevertDialogOpen(true)}
+              >
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Request Revert
               </Button>
             )}
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!selectedKey || isLoading || isLocked}>
-              {isLoading ? 'Saving...' : 'Save'}
-            </Button>
+            {!isLocked && (
+              <Button onClick={handleSave} disabled={!selectedKey || isLoading}>
+                {isLoading ? 'Saving...' : 'Save'}
+              </Button>
+            )}
           </DialogFooter>
         </div>
-
-        {/* Revert Request Dialog */}
-        <AlertDialog open={isRevertDialogOpen} onOpenChange={setIsRevertDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Request Revert</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to request to revert finalized contacts? This will allow
-                editing the email key.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleRequestRevert} disabled={isReverting}>
-                {isReverting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Confirm'
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* Cancel Revert Request Dialog */}
-        <AlertDialog
-          open={isCancelRevertDialogOpen}
-          onOpenChange={setIsCancelRevertDialogOpen}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Cancel Revert Request</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to cancel the pending revert request?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>No</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleCancelRevert}
-                disabled={isCanceling}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {isCanceling ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Canceling...
-                  </>
-                ) : (
-                  'Yes, Cancel'
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </DialogContent>
+
+      {/* Revert Request Dialog */}
+      <AlertDialog open={isRevertDialogOpen} onOpenChange={setIsRevertDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Request Revert</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to request to revert finalized contacts? This will allow
+              editing the email key.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRequestRevert} disabled={isReverting}>
+              {isReverting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Confirm'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel Revert Request Dialog */}
+      <AlertDialog
+        open={isCancelRevertDialogOpen}
+        onOpenChange={setIsCancelRevertDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Revert Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel the pending revert request?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelRevert}
+              disabled={isCanceling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isCanceling ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Canceling...
+                </>
+              ) : (
+                'Yes, Cancel'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

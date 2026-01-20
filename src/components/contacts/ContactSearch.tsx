@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useRef } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,9 +17,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, Search } from 'lucide-react';
+import { Plus, X, Search, ChevronDown, Trash2, Loader2 } from 'lucide-react';
 import { getFilterKeys, getContactFilterValues, type ContactFilter } from '@/actions/contacts';
 import { useDebounce } from '@/hooks/use-debounce';
+import { cn } from '@/lib/utils';
 
 interface ContactSearchProps {
   searchFilters: ContactFilter[];
@@ -50,15 +50,10 @@ export function ContactSearch({
   onFiltersChange,
 }: ContactSearchProps) {
   const { filterKeys } = getFilterKeys();
-  const [filterValueSearch, setFilterValueSearch] = useState<Record<string, string>>({});
+  const [isOpen, setIsOpen] = useState(false);
   const [filterValues, setFilterValues] = useState<Record<string, any[]>>({});
   const [loadingValues, setLoadingValues] = useState<Record<string, boolean>>({});
-
-  const debouncedSearch = useDebounce(async (key: string, searchTerm: string) => {
-    if (key) {
-      await fetchFilterValues(key, searchTerm);
-    }
-  }, 300);
+  const debounceRef = useRef<NodeJS.Timeout>();
 
   const fetchFilterValues = async (key: string, searchTerm = '', page = 1) => {
     setLoadingValues((prev) => ({ ...prev, [key]: true }));
@@ -83,6 +78,7 @@ export function ContactSearch({
         filterKey: null,
         filterValues: [],
         valuesData: [],
+        searchTerm: '',
       },
     ]);
   };
@@ -111,9 +107,42 @@ export function ContactSearch({
     }
   };
 
-  const handleFilterValueChange = (id: string, values: string[]) => {
+  const handleFilterValueToggle = (id: string, value: string, checked: boolean) => {
     setSearchFilters(
-      searchFilters.map((f) => (f.id === id ? { ...f, filterValues: values } : f))
+      searchFilters.map((f) => {
+        if (f.id === id) {
+          const newValues = checked
+            ? [...f.filterValues, value]
+            : f.filterValues.filter((v) => v !== value);
+          return { ...f, filterValues: newValues };
+        }
+        return f;
+      })
+    );
+    onFiltersChange();
+  };
+
+  const handleSelectAll = (id: string) => {
+    const filter = searchFilters.find((f) => f.id === id);
+    if (!filter || !filter.filterKey) return;
+
+    const availableValues = filterValues[filter.filterKey] || [];
+    const allSelected = availableValues.every((val: any) =>
+      filter.filterValues.includes(String(val.value || val))
+    );
+
+    setSearchFilters(
+      searchFilters.map((f) => {
+        if (f.id === id) {
+          return {
+            ...f,
+            filterValues: allSelected
+              ? []
+              : availableValues.map((val: any) => String(val.value || val)),
+          };
+        }
+        return f;
+      })
     );
     onFiltersChange();
   };
@@ -128,196 +157,245 @@ export function ContactSearch({
   };
 
   const activeFiltersCount =
-    searchFilters.length +
+    searchFilters.filter((f) => f.filterKey && f.filterValues.length > 0).length +
     (invalidEmailsChecked ? 1 : 0) +
     (unsubscribedChecked ? 1 : 0) +
     (applePrivateChecked ? 1 : 0) +
     (complaintUsersChecked ? 1 : 0);
 
+  const hasActiveFilters =
+    invalidEmailsChecked ||
+    unsubscribedChecked ||
+    applePrivateChecked ||
+    complaintUsersChecked ||
+    searchFilters.length > 0;
+
   return (
-    <Card>
-      <Accordion type="single" collapsible className="w-full">
-        <AccordionItem value="search">
-          <AccordionTrigger>
+    <Card className="overflow-hidden">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger className="w-full">
+          <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors cursor-pointer">
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4" />
-              <span>Search & Filters</span>
+              <span className="font-semibold">Search Contacts</span>
               {activeFiltersCount > 0 && (
                 <Badge variant="secondary">{activeFiltersCount}</Badge>
               )}
             </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <CardContent className="space-y-4 pt-0">
-              {/* Quick Filters */}
-              <div className="space-y-2">
-                <Label>Quick Filters</Label>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="invalid-emails"
-                      checked={invalidEmailsChecked}
-                      onCheckedChange={setInvalidEmailsChecked}
-                    />
-                    <Label htmlFor="invalid-emails" className="cursor-pointer">
-                      Invalid Emails
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="unsubscribed"
-                      checked={unsubscribedChecked}
-                      onCheckedChange={setUnsubscribedChecked}
-                    />
-                    <Label htmlFor="unsubscribed" className="cursor-pointer">
-                      Unsubscribed
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="apple-private"
-                      checked={applePrivateChecked}
-                      onCheckedChange={setApplePrivateChecked}
-                    />
-                    <Label htmlFor="apple-private" className="cursor-pointer">
-                      Apple Private Relay
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="complaint-users"
-                      checked={complaintUsersChecked}
-                      onCheckedChange={setComplaintUsersChecked}
-                    />
-                    <Label htmlFor="complaint-users" className="cursor-pointer">
-                      Complaint Users
-                    </Label>
-                  </div>
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 transition-transform duration-200',
+                isOpen && 'rotate-180'
+              )}
+            />
+          </div>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <CardContent className="pt-0 pb-6">
+            {/* Quick Filters Row */}
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Use this function to search through your data.
+              </p>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="complaint-users"
+                    checked={complaintUsersChecked}
+                    onCheckedChange={(checked) => {
+                      setComplaintUsersChecked(checked as boolean);
+                      onFiltersChange();
+                    }}
+                  />
+                  <Label htmlFor="complaint-users" className="cursor-pointer text-sm">
+                    Contacts Who Complained
+                  </Label>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="unsubscribed"
+                    checked={unsubscribedChecked}
+                    onCheckedChange={(checked) => {
+                      setUnsubscribedChecked(checked as boolean);
+                      onFiltersChange();
+                    }}
+                  />
+                  <Label htmlFor="unsubscribed" className="cursor-pointer text-sm">
+                    Unsubscribed Contacts
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="invalid-emails"
+                    checked={invalidEmailsChecked}
+                    onCheckedChange={(checked) => {
+                      setInvalidEmailsChecked(checked as boolean);
+                      onFiltersChange();
+                    }}
+                  />
+                  <Label htmlFor="invalid-emails" className="cursor-pointer text-sm">
+                    Invalid Emails
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="apple-private"
+                    checked={applePrivateChecked}
+                    onCheckedChange={(checked) => {
+                      setApplePrivateChecked(checked as boolean);
+                      onFiltersChange();
+                    }}
+                  />
+                  <Label htmlFor="apple-private" className="cursor-pointer text-sm">
+                    Apple Private Contacts
+                  </Label>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleAddFilter}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Search Fields
+                </Button>
               </div>
+            </div>
 
-              {/* Advanced Filters */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Advanced Filters</Label>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleAddFilter}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Filter
+            {/* Filter Cards */}
+            <div className="space-y-4">
+              {searchFilters.map((filter) => (
+                <div
+                  key={filter.id}
+                  className="p-4 rounded-lg border bg-muted/30"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="font-medium">
+                      {filter.filterKey || 'New Filter'}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => handleRemoveFilter(filter.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                    {activeFiltersCount > 0 && (
-                      <Button variant="outline" size="sm" onClick={handleResetFilters}>
-                        Reset All
-                      </Button>
-                    )}
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  {searchFilters.map((filter) => (
-                    <div key={filter.id} className="flex items-center gap-2">
-                      <Select
-                        value={filter.filterKey}
-                        onValueChange={(value) => handleFilterKeyChange(filter.id, value)}
-                      >
-                        <SelectTrigger className="w-full sm:w-[200px]">
-                          <SelectValue placeholder="Select field" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {filterKeys.map((key: string) => (
-                            <SelectItem key={key} value={key}>
-                              {key}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <Select
+                    value={filter.filterKey || ''}
+                    onValueChange={(value) => handleFilterKeyChange(filter.id, value)}
+                  >
+                    <SelectTrigger className="w-full bg-background">
+                      <SelectValue placeholder="Choose a field to filter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filterKeys.map((key: string) => (
+                        <SelectItem key={key} value={key}>
+                          {key}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                      {filter.filterKey && (
-                        <>
-                          <Input
-                            placeholder="Search values..."
-                            value={filter.searchTerm || ''}
-                            onChange={(e) => {
-                              const searchTerm = e.target.value;
-                              setSearchFilters(
-                                searchFilters.map((f) =>
-                                  f.id === filter.id ? { ...f, searchTerm } : f
-                                )
-                              );
-                              debouncedSearch(filter.filterKey!, searchTerm);
-                            }}
-                            className="flex-1"
+                  {filter.filterKey && (
+                    <div className="mt-4">
+                      <div className="flex items-center justify-end gap-4 mb-3">
+                        <Input
+                          placeholder="Search values..."
+                          value={filter.searchTerm || ''}
+                          onChange={(e) => {
+                            const searchTerm = e.target.value;
+                            setSearchFilters(
+                              searchFilters.map((f) =>
+                                f.id === filter.id ? { ...f, searchTerm } : f
+                              )
+                            );
+                            if (debounceRef.current) clearTimeout(debounceRef.current);
+                            debounceRef.current = setTimeout(() => {
+                              fetchFilterValues(filter.filterKey!, searchTerm);
+                            }, 300);
+                          }}
+                          className="max-w-[200px] h-9"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`select-all-${filter.id}`}
+                            checked={
+                              filterValues[filter.filterKey]?.length > 0 &&
+                              filterValues[filter.filterKey]?.every((val: any) =>
+                                filter.filterValues.includes(String(val.value || val))
+                              )
+                            }
+                            onCheckedChange={() => handleSelectAll(filter.id)}
                           />
-                          <div className="flex-1 space-y-2">
-                            <div className="flex flex-wrap gap-2">
-                              {filter.filterValues.map((value) => (
-                                <Badge key={value} variant="secondary" className="gap-1">
-                                  {value}
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleFilterValueChange(
+                          <Label
+                            htmlFor={`select-all-${filter.id}`}
+                            className="cursor-pointer text-sm"
+                          >
+                            Select All
+                          </Label>
+                        </div>
+                      </div>
+
+                      <div className="text-center">
+                        {loadingValues[filter.filterKey] &&
+                        !filterValues[filter.filterKey]?.length ? (
+                          <div className="py-4">
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                          </div>
+                        ) : !filterValues[filter.filterKey]?.length ? (
+                          <p className="text-sm text-muted-foreground py-4">
+                            No values found
+                          </p>
+                        ) : (
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+                            {filterValues[filter.filterKey]?.map((val: any, index: number) => {
+                              const value = String(val.value || val);
+                              const label = val.label || value;
+                              return (
+                                <div
+                                  key={`${value}-${index}`}
+                                  className="flex items-center space-x-2 p-2 rounded hover:bg-muted/50"
+                                >
+                                  <Checkbox
+                                    id={`${filter.id}-${value}`}
+                                    checked={filter.filterValues.includes(value)}
+                                    onCheckedChange={(checked) =>
+                                      handleFilterValueToggle(
                                         filter.id,
-                                        filter.filterValues.filter((v) => v !== value)
+                                        value,
+                                        checked as boolean
                                       )
                                     }
-                                    className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                                  />
+                                  <Label
+                                    htmlFor={`${filter.id}-${value}`}
+                                    className="cursor-pointer text-sm truncate flex-1"
+                                    title={label}
                                   >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </Badge>
-                              ))}
-                            </div>
-                            <Select
-                              value=""
-                              onValueChange={(value) => {
-                                if (!filter.filterValues.includes(value)) {
-                                  handleFilterValueChange(filter.id, [
-                                    ...filter.filterValues,
-                                    value,
-                                  ]);
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select value(s)" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {filterValues[filter.filterKey!]
-                                  ?.filter(
-                                    (val: any) =>
-                                      !filter.filterValues.includes(String(val.value || val))
-                                  )
-                                  ?.map((val: any) => {
-                                    const value = val.value || val;
-                                    const label = val.label || value;
-                                    return (
-                                      <SelectItem key={value} value={String(value)}>
-                                        {label}
-                                      </SelectItem>
-                                    );
-                                  })}
-                              </SelectContent>
-                            </Select>
+                                    {label}
+                                  </Label>
+                                </div>
+                              );
+                            })}
                           </div>
-                        </>
-                      )}
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveFilter(filter.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                        )}
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            {hasActiveFilters && (
+              <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+                <Button variant="outline" onClick={handleResetFilters}>
+                  Reset Search
+                </Button>
               </div>
-            </CardContent>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 }
