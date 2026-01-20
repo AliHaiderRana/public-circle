@@ -19,24 +19,14 @@ interface NavItemProps {
 }
 
 /**
- * Check if a route is active based on exact match or path prefix
- * Handles nested routes by checking if pathname starts with the item path
+ * Check if a route is active based on exact match only
+ * We use exact matching to prevent sibling routes from both appearing active
  */
-function isRouteActive(itemPath: string | undefined, pathname: string, hasChildren?: boolean): boolean {
+function isRouteActive(itemPath: string | undefined, pathname: string): boolean {
   if (!itemPath) return false;
 
-  // Exact match
-  if (itemPath === pathname) return true;
-
-  // If item has children, only exact match should mark it as active
-  // This prevents parent items from appearing active when a child is active
-  if (hasChildren) return false;
-
-  // Check if pathname starts with item path (for nested routes)
-  // e.g., /dashboard/campaign/123 should match /dashboard/campaign
-  if (pathname.startsWith(itemPath + '/')) return true;
-
-  return false;
+  // Exact match only
+  return itemPath === pathname;
 }
 
 /**
@@ -53,7 +43,7 @@ function hasActiveChild(children: NavItem[] | undefined, pathname: string): bool
 function NavItemComponent({ item, pathname, level = 0, onNavigate }: NavItemProps) {
   const hasChildren = item.children && item.children.length > 0;
   const isChildActive = hasActiveChild(item.children, pathname);
-  const isActive = isRouteActive(item.path, pathname, hasChildren);
+  const isActive = isRouteActive(item.path, pathname);
   const isParentActive = isChildActive && !isActive; // Parent is active if child is active but not exact match
 
   // Only expand if this item or its children are active

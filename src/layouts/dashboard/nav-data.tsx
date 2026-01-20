@@ -62,7 +62,6 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
     items: [
       {
         title: "Campaigns",
-        path: paths.dashboard.campaign.list,
         icon: <Mail className="h-5 w-5" />,
         children: [
           {
@@ -84,7 +83,6 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
       },
       {
         title: "Campaign Logs",
-        path: paths.dashboard.logs.root,
         icon: <FileClock className="h-5 w-5" />,
         children: [
           {
@@ -106,7 +104,6 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
     items: [
       {
         title: "Templates",
-        path: paths.dashboard.template.root,
         icon: <FileText className="h-5 w-5" />,
         children: [
           {
@@ -133,7 +130,6 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
     items: [
       {
         title: "Audience",
-        path: paths.dashboard.audience.root,
         icon: <Users className="h-5 w-5" />,
         children: [
           {
@@ -155,7 +151,6 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
     items: [
       {
         title: "Contacts",
-        path: paths.dashboard.contacts.root,
         icon: <Contact className="h-5 w-5" />,
         children: [
           {
@@ -177,7 +172,6 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
     items: [
       {
         title: "Settings",
-        path: paths.dashboard.configurations.root,
         icon: <Settings className="h-5 w-5" />,
         children: [
           {
