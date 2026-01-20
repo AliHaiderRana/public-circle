@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
-import { RefreshCw, Upload, Trash2, Users, Download, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, Upload, Trash2, Users, Download, CheckCircle2, Eye, Edit, AlertTriangle, Tag } from 'lucide-react';
 import { getDuplicateContacts, finalizeContacts } from '@/actions/contacts';
 import {
   getPaginatedContacts,
@@ -50,8 +50,145 @@ import { ContactsStatistics } from '../contacts-statistics';
 import { TableCustomization } from '../table-customization';
 import { FilterSection } from '../filter-section';
 import { formatKeyName } from '../utils';
+import { cn } from '@/lib/utils';
+import { ViewContactDialog } from '@/components/contacts/ViewContactDialog';
+import { ContactEditDialog } from './contact-edit-dialog';
 
 // ----------------------------------------------------------------------
+
+// Mobile Card Component
+interface ContactMobileCardProps {
+  contact: Contact;
+  isSelected: boolean;
+  visibleKeys: string[];
+  isAppleRelay: boolean;
+  getCellValue: (key: string) => string;
+  onSelect: () => void;
+  onDelete: () => void;
+}
+
+function ContactMobileCard({
+  contact,
+  isSelected,
+  visibleKeys,
+  isAppleRelay,
+  getCellValue,
+  onSelect,
+  onDelete,
+}: ContactMobileCardProps) {
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  return (
+    <>
+      <Card 
+        className={cn(
+          "hover:shadow-md transition-shadow",
+          isSelected && "border-primary border-2 bg-primary/5"
+        )}
+      >
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            {/* Header with Checkbox and Actions */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={onSelect}
+                  className="flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  {visibleKeys.length > 0 && (
+                    <h3 className="font-semibold text-base truncate">
+                      {getCellValue(visibleKeys[0])}
+                    </h3>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setViewDialogOpen(true)}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setEditDialogOpen(true)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Contact Details */}
+            <div className="space-y-2 pt-2 border-t">
+              {visibleKeys.slice(1).map((key) => {
+                const value = getCellValue(key);
+                const isBool = typeof contact[key] === 'boolean';
+                const isEmailField = key.toLowerCase().includes('email');
+                const showAppleRelay = isEmailField && isAppleRelay;
+
+                return (
+                  <div key={key} className="flex items-start gap-2 text-sm">
+                    <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-muted-foreground font-medium">
+                          {formatKeyName(key)}:
+                        </span>
+                        {isBool ? (
+                          <Badge variant={contact[key] ? 'default' : 'secondary'} className="text-xs">
+                            {value}
+                          </Badge>
+                        ) : (
+                          <>
+                            <span className="truncate">{value}</span>
+                            {showAppleRelay && (
+                              <Badge variant="outline" className="text-xs flex-shrink-0">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Apple Relay
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dialogs */}
+      <ViewContactDialog
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+        contact={contact}
+      />
+      <ContactEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        contact={contact}
+        onSuccess={() => window.location.reload()}
+      />
+    </>
+  );
+}
 
 export function ContactsListView() {
   const navigate = useNavigate();
@@ -432,7 +569,8 @@ export function ContactsListView() {
             />
           ) : (
             <>
-              <div className="rounded-md border overflow-hidden">
+              {/* Desktop Table View */}
+              <div className="hidden md:block rounded-md border overflow-hidden">
                 <div className="overflow-x-auto max-h-[calc(100vh-400px)] overflow-y-auto">
                   <Table>
                     <TableHeader className="sticky top-0 z-10 bg-background">
@@ -488,6 +626,53 @@ export function ContactsListView() {
                 </Table>
                 </div>
               </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden p-4 space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto">
+                {isLoadingShimmer ? (
+                  // Shimmer loading for mobile
+                  Array.from({ length: rowsPerPage }).map((_, index) => (
+                    <Card key={index} className="p-4">
+                      <div className="space-y-3">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-4 w-2/3" />
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  contacts.map((contact) => {
+                    const isSelected = selectedContacts.includes(contact._id);
+                    const emailKey = visibleKeys.find((k) => k.toLowerCase().includes('email')) || '';
+                    const contactEmail = contact[emailKey] as string;
+                    const isAppleRelay = contactEmail && (contactEmail.includes('privaterelay.appleid.com') || contactEmail.includes('icloud.com'));
+
+                    const getCellValue = (key: string) => {
+                      const value = contact[key];
+                      if (value === null || value === undefined) return '—';
+                      if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+                      if (value instanceof Date) return new Date(value).toLocaleDateString();
+                      if (typeof value === 'object' && value !== null) return JSON.stringify(value);
+                      return String(value);
+                    };
+
+                    return (
+                      <ContactMobileCard
+                        key={contact._id}
+                        contact={contact}
+                        isSelected={isSelected}
+                        visibleKeys={visibleKeys}
+                        isAppleRelay={isAppleRelay}
+                        getCellValue={getCellValue}
+                        onSelect={() => handleSelectContact(contact._id)}
+                        onDelete={() => handleDeleteContact(contact._id)}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
 
               {/* Pagination */}
               {totalContacts > 0 && (

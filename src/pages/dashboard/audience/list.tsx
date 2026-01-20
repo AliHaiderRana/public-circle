@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Download, ChevronLeft, ChevronRight, Mail, Phone, Calendar } from 'lucide-react';
 import { getAllUsers } from '@/actions/users';
 import { paths } from '@/routes/paths';
 
@@ -80,7 +80,8 @@ export default function ContactsListPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -103,6 +104,43 @@ export default function ContactsListPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {paginatedUsers.map((user: any) => (
+                  <Card key={user._id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        {/* Name */}
+                        <div>
+                          <h3 className="font-semibold text-base">
+                            {user.firstName} {user.lastName}
+                          </h3>
+                        </div>
+
+                        {/* Contact Details */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="text-muted-foreground">Email:</span>
+                            <span className="truncate">{user.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="text-muted-foreground">Phone:</span>
+                            <span>{user.phoneNumber || '—'}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="text-muted-foreground">Created:</span>
+                            <span>{new Date(user.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
 
               {/* Pagination */}

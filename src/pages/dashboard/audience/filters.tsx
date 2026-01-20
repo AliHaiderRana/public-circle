@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, RefreshCw, Edit, Trash2 } from 'lucide-react';
+import { Plus, RefreshCw, Edit, Trash2, Tag, Type, List, Calendar } from 'lucide-react';
 import { paths } from '@/routes/paths';
 import { getPaginatedFilters, deleteFilter } from '@/actions/filters';
 import { toast } from 'sonner';
@@ -105,58 +105,128 @@ export default function FiltersPage() {
         </Card>
       ) : (
         <Card>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Field Name</TableHead>
-                  <TableHead>Field Type</TableHead>
-                  <TableHead>Values</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filters.map((filter) => (
-                  <TableRow key={filter._id}>
-                    <TableCell className="font-medium">{filter.filterKey}</TableCell>
-                    <TableCell>{filter.filterType}</TableCell>
-                    <TableCell>
-                      {filter.filterValueCount === 0
-                        ? '---'
-                        : `(${filter.filterValueCount} ${filter.filterValueCount > 1 ? 'options' : 'option'})`}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(filter.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            navigate(`${paths.dashboard.audience.newfilter}/${filter._id}`)
-                          }
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setFilterToDelete(filter);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          <CardContent className="p-0">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Field Name</TableHead>
+                    <TableHead>Field Type</TableHead>
+                    <TableHead>Values</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filters.map((filter) => (
+                    <TableRow key={filter._id}>
+                      <TableCell className="font-medium">{filter.filterKey}</TableCell>
+                      <TableCell>{filter.filterType}</TableCell>
+                      <TableCell>
+                        {filter.filterValueCount === 0
+                          ? '---'
+                          : `(${filter.filterValueCount} ${filter.filterValueCount > 1 ? 'options' : 'option'})`}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(filter.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              navigate(`${paths.dashboard.audience.newfilter}/${filter._id}`)
+                            }
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setFilterToDelete(filter);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden p-4 space-y-3">
+              {filters.map((filter) => (
+                <Card key={filter._id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {/* Field Name Header */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                          <h3 className="font-semibold text-base truncate">
+                            {filter.filterKey}
+                          </h3>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0 ml-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              navigate(`${paths.dashboard.audience.newfilter}/${filter._id}`)
+                            }
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setFilterToDelete(filter);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Field Details */}
+                      <div className="space-y-2 pt-2 border-t">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Type className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-muted-foreground">Type:</span>
+                          <span className="font-medium">{filter.filterType}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <List className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-muted-foreground">Values:</span>
+                          <span>
+                            {filter.filterValueCount === 0
+                              ? '---'
+                              : `${filter.filterValueCount} ${filter.filterValueCount > 1 ? 'options' : 'option'}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-muted-foreground">Created:</span>
+                          <span>{new Date(filter.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
         </Card>
       )}
 

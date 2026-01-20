@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Trash2, RefreshCw, CheckCircle2, XCircle, Copy, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, CheckCircle2, XCircle, Copy, ChevronDown, ChevronRight, Mail, Globe, Shield, Settings, Tag } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -297,141 +297,143 @@ export default function EmailConfigurationPage() {
               No configurations found. Add an email or domain to get started.
             </div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[25%]">Name</TableHead>
-                    <TableHead className="text-center">Type</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-center">Apple Relay</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allConfigurationsCombined.map((config: any) => {
-                    const isDomain = !!config.emailDomain;
-                    const isEmail = !!config.emailAddress;
-                    const appleRelayStatus = isDomain ? getDomainAppleRelayStatus(config) : null;
-                    const isExpanded = expandedConfigId === config._id;
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[25%]">Name</TableHead>
+                      <TableHead className="text-center">Type</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-center">Apple Relay</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allConfigurationsCombined.map((config: any) => {
+                      const isDomain = !!config.emailDomain;
+                      const isEmail = !!config.emailAddress;
+                      const appleRelayStatus = isDomain ? getDomainAppleRelayStatus(config) : null;
+                      const isExpanded = expandedConfigId === config._id;
 
-                    return (
-                      <>
-                        <TableRow key={config._id}>
-                          <TableCell className="font-medium">
-                            {isDomain ? (
-                              <div className="flex items-center gap-2">
+                      return (
+                        <>
+                          <TableRow key={config._id}>
+                            <TableCell className="font-medium">
+                              {isDomain ? (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() =>
+                                      setExpandedConfigId(isExpanded ? null : config._id)
+                                    }
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                  {config.emailDomain}
+                                </div>
+                              ) : (
+                                config.emailAddress
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="outline">
+                                {isDomain ? 'Domain' : 'Email'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant={config.isVerified ? 'default' : 'secondary'}>
+                                {config.isVerified ? (
+                                  <>
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Verified
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    Unverified
+                                  </>
+                                )}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {isDomain ? (
+                                <div className="flex items-center justify-center">
+                                  {appleRelayStatus?.status === 'NO_EMAILS' ? (
+                                    <Badge variant="outline" className="opacity-60">
+                                      No Emails
+                                    </Badge>
+                                  ) : appleRelayStatus?.status === 'VERIFIED' ? (
+                                    <Badge variant="default" className="bg-green-500">
+                                      Verified ({appleRelayStatus.count})
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary">
+                                      Partial ({appleRelayStatus?.count}/{appleRelayStatus?.total})
+                                    </Badge>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-center">
+                                  <AppleRelayActions
+                                    status={config.privateRelayVerificationStatus}
+                                    emailAddress={config.emailAddress}
+                                    isEmailVerified={config.isVerified}
+                                    onStatusChange={() => mutate(endpoints.configurations.configuration)}
+                                  />
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {isDomain && !config.isVerified && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleRecheckDomain(config.emailDomain)}
+                                      disabled={recheckingDomain === config.emailDomain}
+                                    >
+                                      <RefreshCw
+                                        className={`h-4 w-4 mr-1 ${
+                                          recheckingDomain === config.emailDomain ? 'animate-spin' : ''
+                                        }`}
+                                      />
+                                      Recheck
+                                    </Button>
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      onClick={() => handleVerifyDomain(config.emailDomain)}
+                                      disabled={verifyingDomain === config.emailDomain}
+                                    >
+                                      {verifyingDomain === config.emailDomain ? 'Verifying...' : 'Verify'}
+                                    </Button>
+                                  </>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() =>
-                                    setExpandedConfigId(isExpanded ? null : config._id)
-                                  }
+                                  onClick={() => {
+                                    if (isDomain) {
+                                      handleDeleteDomain(config.emailDomain);
+                                    } else {
+                                      handleDeleteEmail(config.emailAddress);
+                                    }
+                                  }}
                                 >
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4" />
-                                  )}
+                                  <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
-                                {config.emailDomain}
                               </div>
-                            ) : (
-                              config.emailAddress
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline">
-                              {isDomain ? 'Domain' : 'Email'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant={config.isVerified ? 'default' : 'secondary'}>
-                              {config.isVerified ? (
-                                <>
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  Verified
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  Unverified
-                                </>
-                              )}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {isDomain ? (
-                              <div className="flex items-center justify-center">
-                                {appleRelayStatus?.status === 'NO_EMAILS' ? (
-                                  <Badge variant="outline" className="opacity-60">
-                                    No Emails
-                                  </Badge>
-                                ) : appleRelayStatus?.status === 'VERIFIED' ? (
-                                  <Badge variant="default" className="bg-green-500">
-                                    Verified ({appleRelayStatus.count})
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="secondary">
-                                    Partial ({appleRelayStatus?.count}/{appleRelayStatus?.total})
-                                  </Badge>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center">
-                                <AppleRelayActions
-                                  status={config.privateRelayVerificationStatus}
-                                  emailAddress={config.emailAddress}
-                                  isEmailVerified={config.isVerified}
-                                  onStatusChange={() => mutate(endpoints.configurations.configuration)}
-                                />
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              {isDomain && !config.isVerified && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleRecheckDomain(config.emailDomain)}
-                                    disabled={recheckingDomain === config.emailDomain}
-                                  >
-                                    <RefreshCw
-                                      className={`h-4 w-4 mr-1 ${
-                                        recheckingDomain === config.emailDomain ? 'animate-spin' : ''
-                                      }`}
-                                    />
-                                    Recheck
-                                  </Button>
-                                  <Button
-                                    variant="default"
-                                    size="sm"
-                                    onClick={() => handleVerifyDomain(config.emailDomain)}
-                                    disabled={verifyingDomain === config.emailDomain}
-                                  >
-                                    {verifyingDomain === config.emailDomain ? 'Verifying...' : 'Verify'}
-                                  </Button>
-                                </>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  if (isDomain) {
-                                    handleDeleteDomain(config.emailDomain);
-                                  } else {
-                                    handleDeleteEmail(config.emailAddress);
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                            </TableCell>
+                          </TableRow>
 
                         {/* Expanded Domain Details */}
                         {isDomain && isExpanded && (
@@ -557,6 +559,271 @@ export default function EmailConfigurationPage() {
                 </TableBody>
               </Table>
             </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden p-4 space-y-3">
+                {allConfigurationsCombined.map((config: any) => {
+                  const isDomain = !!config.emailDomain;
+                  const isEmail = !!config.emailAddress;
+                  const appleRelayStatus = isDomain ? getDomainAppleRelayStatus(config) : null;
+                  const isExpanded = expandedConfigId === config._id;
+
+                  return (
+                    <Card key={config._id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {/* Header with Name and Actions */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              {isDomain ? (
+                                <>
+                                  <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 flex-shrink-0"
+                                        onClick={() =>
+                                          setExpandedConfigId(isExpanded ? null : config._id)
+                                        }
+                                      >
+                                        {isExpanded ? (
+                                          <ChevronDown className="h-4 w-4" />
+                                        ) : (
+                                          <ChevronRight className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                      <h3 className="font-semibold text-base truncate">
+                                        {config.emailDomain}
+                                      </h3>
+                                    </div>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                  <h3 className="font-semibold text-base truncate">
+                                    {config.emailAddress}
+                                  </h3>
+                                </>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 flex-shrink-0"
+                              onClick={() => {
+                                if (isDomain) {
+                                  handleDeleteDomain(config.emailDomain);
+                                } else {
+                                  handleDeleteEmail(config.emailAddress);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+
+                          {/* Details */}
+                          <div className="space-y-2 pt-2 border-t">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="text-muted-foreground">Type:</span>
+                              <Badge variant="outline" className="text-xs">
+                                {isDomain ? 'Domain' : 'Email'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Shield className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="text-muted-foreground">Status:</span>
+                              <Badge variant={config.isVerified ? 'default' : 'secondary'} className="text-xs">
+                                {config.isVerified ? (
+                                  <>
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Verified
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    Unverified
+                                  </>
+                                )}
+                              </Badge>
+                            </div>
+                            {isDomain && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Settings className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="text-muted-foreground">Apple Relay:</span>
+                                {appleRelayStatus?.status === 'NO_EMAILS' ? (
+                                  <Badge variant="outline" className="opacity-60 text-xs">
+                                    No Emails
+                                  </Badge>
+                                ) : appleRelayStatus?.status === 'VERIFIED' ? (
+                                  <Badge variant="default" className="bg-green-500 text-xs">
+                                    Verified ({appleRelayStatus.count})
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Partial ({appleRelayStatus?.count}/{appleRelayStatus?.total})
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                            {!isDomain && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Settings className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="text-muted-foreground">Apple Relay:</span>
+                                <div className="flex-1">
+                                  <AppleRelayActions
+                                    status={config.privateRelayVerificationStatus}
+                                    emailAddress={config.emailAddress}
+                                    isEmailVerified={config.isVerified}
+                                    onStatusChange={() => mutate(endpoints.configurations.configuration)}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Domain Actions */}
+                          {isDomain && !config.isVerified && (
+                            <div className="flex gap-2 pt-2 border-t">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => handleRecheckDomain(config.emailDomain)}
+                                disabled={recheckingDomain === config.emailDomain}
+                              >
+                                <RefreshCw
+                                  className={`h-4 w-4 mr-1 ${
+                                    recheckingDomain === config.emailDomain ? 'animate-spin' : ''
+                                  }`}
+                                />
+                                Recheck
+                              </Button>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => handleVerifyDomain(config.emailDomain)}
+                                disabled={verifyingDomain === config.emailDomain}
+                              >
+                                {verifyingDomain === config.emailDomain ? 'Verifying...' : 'Verify'}
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Expanded Domain Details (Mobile) */}
+                          {isDomain && isExpanded && (
+                            <div className="pt-3 border-t space-y-4">
+                              {/* DNS Records */}
+                              {config.dnsInfo && config.dnsInfo.length > 0 && (
+                                <div className="space-y-3">
+                                  <div>
+                                    <h4 className="font-medium text-sm mb-1">DNS Records to Add</h4>
+                                    <p className="text-xs text-muted-foreground mb-3">
+                                      Add these DNS records to verify your domain:
+                                    </p>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {config.dnsInfo.map((record: any, index: number) => (
+                                      <Card key={index} className="p-3">
+                                        <div className="space-y-2">
+                                          <div className="flex items-center justify-between">
+                                            <Badge variant="outline" className="text-xs">
+                                              {record.Type}
+                                            </Badge>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-6 w-6"
+                                              onClick={() => copyToClipboard(record.Value)}
+                                            >
+                                              <Copy className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <div className="text-xs">
+                                              <span className="text-muted-foreground">Name: </span>
+                                              <span className="font-mono break-all">{record.Name}</span>
+                                            </div>
+                                            <div className="text-xs">
+                                              <span className="text-muted-foreground">Value: </span>
+                                              <span className="font-mono break-all">{record.Value}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Domain Addresses */}
+                              {config.addresses && config.addresses.length > 0 && (
+                                <div className="space-y-3">
+                                  <h4 className="font-medium text-sm">
+                                    Email Addresses for {config.emailDomain}
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {config.addresses
+                                      .filter((addr: any) => addr.status === 'ACTIVE')
+                                      .map((address: any) => (
+                                        <Card key={address._id} className="p-3">
+                                          <div className="space-y-2">
+                                            <div className="flex items-start justify-between">
+                                              <div className="flex-1 min-w-0">
+                                                <div className="font-medium text-sm truncate">
+                                                  {address.emailAddress}
+                                                </div>
+                                                {address.fromName && (
+                                                  <div className="text-xs text-muted-foreground mt-1">
+                                                    From: {address.fromName}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6 flex-shrink-0"
+                                                onClick={() => handleDeleteEmail(address._id || address.emailAddress)}
+                                              >
+                                                <Trash2 className="h-3 w-3 text-destructive" />
+                                              </Button>
+                                            </div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <Badge
+                                                variant={address.isVerified ? 'default' : 'secondary'}
+                                                className="text-xs"
+                                              >
+                                                {address.isVerified ? 'Verified' : 'Unverified'}
+                                              </Badge>
+                                              <AppleRelayActions
+                                                status={address.privateRelayVerificationStatus}
+                                                emailAddress={address.emailAddress}
+                                                emailDomain={config.emailDomain}
+                                                isEmailVerified={address.isVerified}
+                                                isDomainVerified={config.isVerified}
+                                                onStatusChange={() => mutate(endpoints.configurations.configuration)}
+                                              />
+                                            </div>
+                                          </div>
+                                        </Card>
+                                      ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
