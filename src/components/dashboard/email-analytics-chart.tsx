@@ -35,12 +35,55 @@ export function EmailAnalyticsChart({
   chart,
 }: EmailAnalyticsChartProps) {
   const chartOptions = useChart({
-    colors: ['#3b82f6', '#8b5cf6', '#10b981'],
+    colors: ['#d946a8', '#888888', '#bbbbbb'],
     stroke: {
       width: 2,
+      curve: 'smooth',
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.4,
+        opacityTo: 0.05,
+        stops: [0, 90, 100],
+      },
+    },
+    markers: {
+      size: 0,
+      hover: {
+        size: 5,
+      },
+    },
+    dataLabels: {
+      enabled: false,
     },
     xaxis: {
       categories: chart.categories || [],
+      labels: {
+        style: {
+          colors: '#888888',
+          fontSize: '12px',
+        },
+      },
+      axisBorder: {
+        show: false,
+      },
+      axisTicks: {
+        show: false,
+      },
+    },
+    yaxis: {
+      labels: {
+        style: {
+          colors: '#888888',
+          fontSize: '12px',
+        },
+      },
+    },
+    grid: {
+      borderColor: '#f0f0f0',
+      strokeDashArray: 4,
     },
     legend: {
       show: true,
@@ -50,12 +93,6 @@ export function EmailAnalyticsChart({
     tooltip: {
       y: {
         formatter: (value: number) => `${value.toLocaleString()}`,
-      },
-    },
-    plotOptions: {
-      bar: {
-        borderRadius: 4,
-        columnWidth: '60%',
       },
     },
   });
@@ -180,7 +217,7 @@ export function EmailAnalyticsChart({
           </div>
         ) : (
           <Chart
-            type="bar"
+            type="area"
             series={chart.series}
             options={chartOptions}
             height={400}

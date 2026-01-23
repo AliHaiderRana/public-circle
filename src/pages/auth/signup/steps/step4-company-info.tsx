@@ -13,7 +13,6 @@ import { REGION_KEY } from '@/config/config';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { isValidPhoneNumber } from 'react-phone-number-input';
-import { ArrowLeft } from 'lucide-react';
 
 const schema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -103,31 +102,19 @@ export function Step4CompanyInfo({ setActiveStep, isInvited }: Step4CompanyInfoP
   const phoneNumber = watch('phoneNumber');
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() => setActiveStep(3)}
-        className="mb-4"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <h3 className="text-xl font-semibold text-center">Tell us about yourself</h3>
 
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Tell Us More About Yourself</h3>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
+      {/* 1. First Name / Last Name */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-2">
           <Label htmlFor="firstName">First Name</Label>
           <Input id="firstName" {...register('firstName')} />
           {errors.firstName && (
             <p className="text-sm text-destructive">{errors.firstName.message}</p>
           )}
         </div>
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label htmlFor="lastName">Last Name</Label>
           <Input id="lastName" {...register('lastName')} />
           {errors.lastName && (
@@ -136,54 +123,56 @@ export function Step4CompanyInfo({ setActiveStep, isInvited }: Step4CompanyInfoP
         </div>
       </div>
 
+      {/* 2. Business Name */}
       {!isInvited && (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="businessName">Business Name</Label>
-            <Input id="businessName" {...register('businessName')} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="companySize">Company Size</Label>
-            <Select value={companySize} onValueChange={(value) => setValue('companySize', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select company size" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1-10">1-10</SelectItem>
-                <SelectItem value="11-50">11-50</SelectItem>
-                <SelectItem value="51-200">51-200</SelectItem>
-                <SelectItem value="201-500">201-500</SelectItem>
-                <SelectItem value="500+">500+</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </>
+        <div className="grid gap-2">
+          <Label htmlFor="businessName">Business Name</Label>
+          <Input id="businessName" {...register('businessName')} />
+        </div>
       )}
 
-      <div className="space-y-2">
+      {/* 3. Phone Number */}
+      <div className="grid gap-2">
         <Label htmlFor="phoneNumber">Phone Number</Label>
-        <div className="relative">
-          <PhoneInput
-            international
-            defaultCountry="US"
-            value={phoneNumber}
-            onChange={(value) => setValue('phoneNumber', value || '')}
-            className="phone-input"
-          />
-        </div>
+        <PhoneInput
+          international
+          defaultCountry="US"
+          value={phoneNumber}
+          onChange={(value) => setValue('phoneNumber', value || '')}
+          className="phone-input"
+        />
         {errors.phoneNumber && (
           <p className="text-sm text-destructive">{errors.phoneNumber.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
+      {/* 4. Secondary Email */}
+      <div className="grid gap-2">
         <Label htmlFor="secondaryEmail">Secondary Email (Optional)</Label>
         <Input id="secondaryEmail" type="email" {...register('secondaryEmail')} />
         {errors.secondaryEmail && (
           <p className="text-sm text-destructive">{errors.secondaryEmail.message}</p>
         )}
       </div>
+
+      {/* 5. Company Size */}
+      {!isInvited && (
+        <div className="grid gap-2">
+          <Label htmlFor="companySize">Company Size</Label>
+          <Select value={companySize} onValueChange={(value) => setValue('companySize', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select company size" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1-10">1-10</SelectItem>
+              <SelectItem value="11-50">11-50</SelectItem>
+              <SelectItem value="51-200">51-200</SelectItem>
+              <SelectItem value="201-500">201-500</SelectItem>
+              <SelectItem value="500+">500+</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <Button type="submit" className="w-full">
         Continue

@@ -13,9 +13,18 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { getPlans, getActivePlans, updateSubscription } from '@/actions/payments';
+import { verifyReferalCode } from '@/actions/signup';
 import { toast } from 'sonner';
-import { Check, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
+import { Check, ArrowUp, ArrowDown, Loader2, Gift, CheckCircle2, XCircle, AlertCircle, Info } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // ----------------------------------------------------------------------
 
@@ -48,6 +57,13 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
   const { activePlans } = getActivePlans();
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Referral code state
+  const [referralCode, setReferralCode] = useState('');
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [codeVerificationStatus, setCodeVerificationStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [verifiedCoupon, setVerifiedCoupon] = useState<string | null>(null);
+  const [rewardInfo, setRewardInfo] = useState<any>(null);
 
   const activePlanId = useMemo(() => {
     return activePlans?.[0]?.productId || null;
@@ -84,6 +100,41 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
     setSelectedPlan(plan);
   };
 
+  const handleVerifyReferralCode = async () => {
+    if (!referralCode || referralCode.trim() === '') {
+      toast.error('Please enter a referral code');
+      return;
+    }
+
+    setIsVerifyingCode(true);
+    try {
+      const res = await verifyReferalCode({ referralCode: referralCode.trim() });
+      if (res?.status === 200) {
+        setCodeVerificationStatus('success');
+        setVerifiedCoupon(referralCode.trim());
+        setRewardInfo(res?.data?.data);
+        toast.success(res?.data?.message || 'Referral code applied!');
+      } else {
+        setCodeVerificationStatus('error');
+        setVerifiedCoupon(null);
+        setRewardInfo(null);
+      }
+    } catch (error: any) {
+      setCodeVerificationStatus('error');
+      setVerifiedCoupon(null);
+      setRewardInfo(null);
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
+
+  const handleClearReferralCode = () => {
+    setReferralCode('');
+    setCodeVerificationStatus('idle');
+    setVerifiedCoupon(null);
+    setRewardInfo(null);
+  };
+
   const handleUpgrade = async () => {
     if (!selectedPlan) return;
 
@@ -91,10 +142,20 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
     try {
       // Get the price ID for the selected plan
       const priceId = getPriceId(selectedPlan);
-      await updateSubscription([{ price: priceId }]);
+
+      // Prepare subscription data with referral code if verified
+      const subscriptionData: any = [{ price: priceId }];
+
+      // Note: The updateSubscription API might need to be modified to accept coupon/referral code
+      // For now, we're passing the verified coupon if available
+      await updateSubscription(subscriptionData, verifiedCoupon || undefined);
+
       toast.success('Subscription updated successfully');
       onOpenChange(false);
       setSelectedPlan(null);
+
+      // Reset referral code state
+      handleClearReferralCode();
     } catch (error) {
       // Error is handled in the action
     } finally {
@@ -226,6 +287,151 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
             );
           })}
         </div>
+
+        {/* Referral Code Section */}
+        {selectedPlan && !selectedPlan.isActivePlan && (
+          <div className="border-2 border-dashed border-primary/30 rounded-lg overflow-hidden mb-4">
+            {codeVerificationStatus === 'success' && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-green-800">Referral Code Applied!</p>
+                      <p className="text-sm text-green-700">
+                        {rewardInfo?.discountInPercentage
+                          ? `${rewardInfo.discountInPercentage}% discount `
+                          : rewardInfo?.trialInDays
+                            ? `${Math.floor(rewardInfo.trialInDays / 30)} month free trial `
+                            : 'Discount '}
+                        will be applied
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-300">
+                    <Gift className="h-3 w-3 mr-1" />
+                    {referralCode}
+                  </Badge>
+                </div>
+              </div>
+            )}
+
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="referral-code" className="border-none">
+                <AccordionTrigger className="px-6 py-4 hover:bg-primary/5 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                      codeVerificationStatus === 'success'
+                        ? "bg-green-100"
+                        : "bg-primary/10"
+                    )}>
+                      <Gift className={cn(
+                        "h-5 w-5",
+                        codeVerificationStatus === 'success'
+                          ? "text-green-600"
+                          : "text-primary"
+                      )} />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold">
+                        {codeVerificationStatus === 'success'
+                          ? 'Referral Code Applied'
+                          : 'Have a Referral Code?'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {codeVerificationStatus === 'success'
+                          ? 'Click to change or remove'
+                          : 'Get special discounts and rewards'}
+                      </p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                  <div className="space-y-4 pt-2">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Input
+                          placeholder="Enter referral code"
+                          value={referralCode}
+                          onChange={(e) => {
+                            setReferralCode(e.target.value);
+                            if (codeVerificationStatus !== 'idle') {
+                              setCodeVerificationStatus('idle');
+                              setVerifiedCoupon(null);
+                              setRewardInfo(null);
+                            }
+                          }}
+                          disabled={isVerifyingCode}
+                          className="pr-10 h-11"
+                        />
+                        {codeVerificationStatus === 'success' && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
+                            <CheckCircle2 className="h-5 w-5" />
+                          </div>
+                        )}
+                        {codeVerificationStatus === 'error' && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-600">
+                            <XCircle className="h-5 w-5" />
+                          </div>
+                        )}
+                      </div>
+                      {codeVerificationStatus === 'success' ? (
+                        <Button variant="outline" onClick={handleClearReferralCode} className="h-11">
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Remove
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={handleVerifyReferralCode}
+                          disabled={isVerifyingCode || !referralCode.trim()}
+                          className="h-11"
+                        >
+                          {isVerifyingCode ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Verifying...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="mr-2 h-4 w-4" />
+                              Apply Code
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+
+                    {codeVerificationStatus === 'error' && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-red-700">
+                          Invalid referral code. Please check and try again.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="bg-muted/50 rounded-lg p-4 border border-dashed">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-muted-foreground">
+                          <p className="font-medium mb-1">How it works:</p>
+                          <ul className="space-y-1 text-xs">
+                            <li>• Enter your referral code above</li>
+                            <li>• Get instant discounts or free trial months</li>
+                            <li>• Applied automatically to your payment</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        )}
 
         {selectedPlan && !selectedPlan.isActivePlan && (
           <div className="border-t pt-4 space-y-4">

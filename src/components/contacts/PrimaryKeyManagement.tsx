@@ -233,12 +233,12 @@ export function PrimaryKeyManagement({
 
             {/* Pending Request Badge */}
             {hasPendingRequest && (
-              <div className="rounded-lg border border-blue-500/50 bg-blue-500/10 p-4">
+              <div className="rounded-lg border border-gray-500/50 bg-gray-500/10 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <RotateCcw className="h-4 w-4 text-blue-500" />
+                    <RotateCcw className="h-4 w-4 text-gray-500" />
                     <div>
-                      <p className="text-sm font-medium text-blue-600">Revert request pending</p>
+                      <p className="text-sm font-medium text-foreground">Revert request pending</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Waiting for approval
                       </p>

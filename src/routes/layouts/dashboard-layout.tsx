@@ -6,13 +6,14 @@ import { LoadingState } from '@/components/ui/loading-state';
 
 /**
  * Dashboard Layout Wrapper
- * 
+ *
  * Provides the dashboard layout with nested route support using React Router's Outlet.
  * This wrapper:
- * - Protects routes with AuthGuard (requires authentication)
+ * - Protects routes with AuthGuard (requires authentication + subscription check)
  * - Wraps content in DashboardLayout (sidebar, header, etc.)
  * - Provides Suspense boundary with loading state for lazy-loaded routes
- * 
+ * - AuthGuard handles subscription overlay for expired/cancelled subscriptions
+ *
  * Usage:
  * ```tsx
  * <Route path="dashboard" element={<DashboardLayoutWrapper />}>

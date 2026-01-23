@@ -90,13 +90,13 @@ export function Step1Email({ setActiveStep, setEmailAddress }: Step1EmailProps) 
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-md mx-auto">
-      <div className="space-y-2">
-        <Label htmlFor="businessEmail">Business Email</Label>
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <div className="grid gap-2">
+        <Label htmlFor="businessEmail">Email</Label>
         <Input
           id="businessEmail"
           type="email"
-          placeholder="your@email.com"
+          placeholder="m@example.com"
           {...register('businessEmail')}
         />
         {errors.businessEmail && (
@@ -110,7 +110,7 @@ export function Step1Email({ setActiveStep, setEmailAddress }: Step1EmailProps) 
       />
 
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Sending...' : 'Sign Up'}
+        {isLoading ? 'Sending...' : 'Create Account'}
       </Button>
     </form>
   );

@@ -219,8 +219,8 @@ export default function TemplateSelectPage() {
           className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group relative overflow-hidden"
           onClick={handleStartFromScratch}
         >
-          <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-            <Sparkles className="h-16 w-16 text-indigo-500 group-hover:scale-110 transition-transform" />
+          <div className="aspect-[4/3] bg-muted flex items-center justify-center">
+            <Sparkles className="h-16 w-16 text-muted-foreground group-hover:scale-110 transition-transform" />
           </div>
           <CardContent className="p-4">
             <h3 className="font-semibold text-center">Start from Scratch</h3>

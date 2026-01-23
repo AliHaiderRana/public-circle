@@ -42,15 +42,15 @@ export function QuotaUsage({ quota }: QuotaUsageProps) {
               Current month consumption
             </p>
           </div>
-          <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-            <Database className="h-6 w-6 text-blue-600" />
+          <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+            <Database className="h-6 w-6 text-gray-600" />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Usage</span>
-              <span className="text-2xl font-bold text-blue-600">
+              <span className="text-2xl font-bold text-foreground">
                 {bandwidthPercentage.toFixed(1)}%
               </span>
             </div>
@@ -75,14 +75,14 @@ export function QuotaUsage({ quota }: QuotaUsageProps) {
               <>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Overage</p>
-                  <p className="text-sm font-semibold text-orange-600">
+                  <p className="text-sm font-semibold text-foreground">
                     {data.bandwidthConsumedInOverage.toLocaleString()}{' '}
                     {data.bandwidthConsumedInOverageUnit || 'KB'}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Overage Cost</p>
-                  <p className="text-sm font-semibold text-orange-600">
+                  <p className="text-sm font-semibold text-foreground">
                     ${data.bandwidthConsumedInOveragePrice?.toLocaleString() || 0}
                   </p>
                 </div>
@@ -101,15 +101,15 @@ export function QuotaUsage({ quota }: QuotaUsageProps) {
               Current month consumption
             </p>
           </div>
-          <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-            <Mail className="h-6 w-6 text-purple-600" />
+          <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+            <Mail className="h-6 w-6 text-gray-600" />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Usage</span>
-              <span className="text-2xl font-bold text-purple-600">
+              <span className="text-2xl font-bold text-foreground">
                 {emailPercentage.toFixed(1)}%
               </span>
             </div>
@@ -134,14 +134,14 @@ export function QuotaUsage({ quota }: QuotaUsageProps) {
               <>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Overage</p>
-                  <p className="text-sm font-semibold text-orange-600">
+                  <p className="text-sm font-semibold text-foreground">
                     {data.emailsConsumedInOverage.toLocaleString()}{' '}
                     {data.emailsConsumedInOverageUnit || ''}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Overage Cost</p>
-                  <p className="text-sm font-semibold text-orange-600">
+                  <p className="text-sm font-semibold text-foreground">
                     ${data.emailsConsumedInOveragePrice?.toLocaleString() || 0}
                   </p>
                 </div>

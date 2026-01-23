@@ -45,7 +45,7 @@ export function CompanyLogo({
       ) : (
         <div
           className={cn(
-            'rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border border-border/50 text-white font-semibold flex-shrink-0 shadow-sm'
+            'rounded-md bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center border border-border/50 text-white font-semibold flex-shrink-0 shadow-sm'
           )}
           style={{ width: logoSize, height: logoSize }}
         >

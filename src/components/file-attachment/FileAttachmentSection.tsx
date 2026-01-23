@@ -44,13 +44,13 @@ const FileIcon = ({ fileName, className }: { fileName: string; className?: strin
     return <FileText className={cn('h-10 w-10 text-red-500', className)} />;
   }
   if (['doc', 'docx'].includes(ext || '')) {
-    return <FileText className={cn('h-10 w-10 text-blue-500', className)} />;
+    return <FileText className={cn('h-10 w-10 text-gray-500', className)} />;
   }
   if (['xls', 'xlsx'].includes(ext || '')) {
     return <FileText className={cn('h-10 w-10 text-green-500', className)} />;
   }
   if (['png', 'jpg', 'jpeg', 'gif'].includes(ext || '')) {
-    return <ImageIcon className={cn('h-10 w-10 text-purple-500', className)} />;
+    return <ImageIcon className={cn('h-10 w-10 text-gray-500', className)} />;
   }
   return <FileText className={cn('h-10 w-10 text-gray-500', className)} />;
 };

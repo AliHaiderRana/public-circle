@@ -17,7 +17,6 @@ import { useAuthContext } from '@/auth/hooks/use-auth-context';
 import { toast } from 'sonner';
 import { REGION_KEY } from '@/config/config';
 import { Country, State, City } from 'country-state-city';
-import { ArrowLeft } from 'lucide-react';
 
 /**
  * Simple postal code validation by country code
@@ -75,9 +74,10 @@ interface Step5AdditionalInfoProps {
 
 export function Step5AdditionalInfo({ setActiveStep, isInvited }: Step5AdditionalInfoProps) {
   const { signupUser, checkUserSession } = useAuthContext();
-  const [selectedCountry, setSelectedCountry] = useState<string>('');
-  const [selectedState, setSelectedState] = useState<string>('');
-  const [selectedCity, setSelectedCity] = useState<string>('');
+  // Initialize state from signupUser data directly (like old project)
+  const [selectedCountry, setSelectedCountry] = useState<string>(signupUser?.company?.country || '');
+  const [selectedState, setSelectedState] = useState<string>(signupUser?.company?.province || '');
+  const [selectedCity, setSelectedCity] = useState<string>(signupUser?.company?.city || '');
   const [countryCode, setCountryCode] = useState<string>('');
   const [states, setStates] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
@@ -87,7 +87,7 @@ export function Step5AdditionalInfo({ setActiveStep, isInvited }: Step5Additiona
       country: signupUser?.company?.country || '',
       province: signupUser?.company?.province || '',
       city: signupUser?.company?.city || '',
-      addressLine1: signupUser?.company?.address?.split(' ')[0] || '',
+      addressLine1: signupUser?.company?.address || '',
       addressLine2: '',
       postalCode: signupUser?.company?.postalCode || '',
     }),
@@ -208,37 +208,24 @@ export function Step5AdditionalInfo({ setActiveStep, isInvited }: Step5Additiona
   const allCountries = Country.getAllCountries();
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() => setActiveStep(4)}
-        className="mb-4"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <div className="text-center space-y-2">
+        <h3 className="text-lg font-semibold">What's your business address?</h3>
+        <p className="text-sm text-muted-foreground">
+          To follow anti-spam laws, your address will appear in emails.{' '}
+          <a
+            href="https://publiccircles.com/alternatives"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4 hover:text-foreground"
+          >
+            Learn about alternatives
+          </a>
+        </p>
+      </div>
 
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">What's your business address?</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            To follow anti-spam laws, your address will appear in the footer of every email you send
-            with Public Circles. Don't have an official business address?{' '}
-            <a
-              href="https://publiccircles.com/alternatives"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline font-medium"
-            >
-              Learn about alternatives
-            </a>
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="country">Country</Label>
+      <div className="grid gap-2">
+        <Label htmlFor="country">Country</Label>
           <Select
             value={selectedCountry}
             onValueChange={(value) => {
@@ -257,14 +244,14 @@ export function Step5AdditionalInfo({ setActiveStep, isInvited }: Step5Additiona
               ))}
             </SelectContent>
           </Select>
-          {errors.country && (
-            <p className="text-sm text-destructive">{errors.country.message}</p>
-          )}
-        </div>
+        {errors.country && (
+          <p className="text-sm text-destructive">{errors.country.message}</p>
+        )}
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="province">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="province">
               {values.country === 'United States' ? 'State' : 'Province/Territory'}
             </Label>
             <Select
@@ -286,13 +273,13 @@ export function Step5AdditionalInfo({ setActiveStep, isInvited }: Step5Additiona
                 ))}
               </SelectContent>
             </Select>
-            {errors.province && (
-              <p className="text-sm text-destructive">{errors.province.message}</p>
-            )}
-          </div>
+          {errors.province && (
+            <p className="text-sm text-destructive">{errors.province.message}</p>
+          )}
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="city">City</Label>
+        <div className="grid gap-2">
+          <Label htmlFor="city">City</Label>
             <Select
               value={selectedCity}
               onValueChange={(value) => {
@@ -312,48 +299,45 @@ export function Step5AdditionalInfo({ setActiveStep, isInvited }: Step5Additiona
                 ))}
               </SelectContent>
             </Select>
-            {errors.city && (
-              <p className="text-sm text-destructive">{errors.city.message}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="addressLine1">
-            Address line 1 (Street address or post office box)
-          </Label>
-          <Input id="addressLine1" {...register('addressLine1')} />
-          {errors.addressLine1 && (
-            <p className="text-sm text-destructive">{errors.addressLine1.message}</p>
+          {errors.city && (
+            <p className="text-sm text-destructive">{errors.city.message}</p>
           )}
         </div>
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="addressLine2">Address line 2 (Optional)</Label>
-          <Input id="addressLine2" {...register('addressLine2')} />
-        </div>
+      <div className="grid gap-2">
+        <Label htmlFor="addressLine1">Address line 1</Label>
+        <Input id="addressLine1" placeholder="Street address or P.O. box" {...register('addressLine1')} />
+        {errors.addressLine1 && (
+          <p className="text-sm text-destructive">{errors.addressLine1.message}</p>
+        )}
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="postalCode">
-            {values.country === 'United States' ? 'Zip Code' : 'Postal Code'}
-          </Label>
-          <Input
-            id="postalCode"
-            type={values.country === 'United States' ? 'number' : 'text'}
-            {...register('postalCode', {
-              onChange: (e) => {
-                const postalCode = e.target.value.toString();
-                setValue('postalCode', postalCode);
-                if (countryCode && postalCode) {
-                  validatePostalCodeField(postalCode, values.country);
-                }
-              },
-            })}
-          />
-          {errors.postalCode && (
-            <p className="text-sm text-destructive">{errors.postalCode.message}</p>
-          )}
-        </div>
+      <div className="grid gap-2">
+        <Label htmlFor="addressLine2">Address line 2 (Optional)</Label>
+        <Input id="addressLine2" placeholder="Apt, suite, unit, etc." {...register('addressLine2')} />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="postalCode">
+          {values.country === 'United States' ? 'ZIP Code' : 'Postal Code'}
+        </Label>
+        <Input
+          id="postalCode"
+          type={values.country === 'United States' ? 'number' : 'text'}
+          {...register('postalCode', {
+            onChange: (e) => {
+              const postalCode = e.target.value.toString();
+              setValue('postalCode', postalCode);
+              if (countryCode && postalCode) {
+                validatePostalCodeField(postalCode, values.country);
+              }
+            },
+          })}
+        />
+        {errors.postalCode && (
+          <p className="text-sm text-destructive">{errors.postalCode.message}</p>
+        )}
       </div>
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>

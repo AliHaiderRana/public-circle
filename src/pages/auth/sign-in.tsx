@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +21,9 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { paths } from '@/routes/paths';
+import { Logo } from '@/components/logo/logo';
+import { RegionSelector } from '@/components/auth/region-selector';
+import { LanguageSelector } from '@/components/auth/language-selector';
 
 const signInSchema = z.object({
   emailAddress: z
@@ -133,96 +135,101 @@ export default function SignInPage() {
 
   return (
     <>
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-8">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
-            <CardDescription className="text-center">
-              Don't have an account?{' '}
-              <Link to={paths.auth.jwt.signUp} className="text-primary hover:underline font-medium">
-                Sign up
-              </Link>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {errorMsg && (
-              <div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
-                {errorMsg}
-              </div>
-            )}
+      <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
+        {/* Fixed Header - Currency and Language Selectors */}
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+          <RegionSelector />
+          <LanguageSelector />
+        </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="emailAddress">Email Address</Label>
-                <Input
-                  id="emailAddress"
-                  type="email"
-                  placeholder="email@example.com"
-                  {...register('emailAddress')}
-                />
-                {errors.emailAddress && (
-                  <p className="text-sm text-red-500">{errors.emailAddress.message}</p>
-                )}
-              </div>
+        {/* Logo */}
+        <div className="flex items-center gap-2">
+          <Logo isSingle={false} width={180} height={40} disableLink />
+        </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    to={paths.auth.jwt.resetPassword}
-                    className="text-sm text-primary hover:underline font-medium"
-                  >
-                    Forgot password?
-                  </Link>
+        {/* Card */}
+        <div className="flex w-full max-w-sm flex-col gap-6">
+          <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+            <div className="flex flex-col space-y-1.5 p-6 text-center">
+              <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+              <p className="text-sm text-muted-foreground">
+                Enter your credentials to sign in to your account
+              </p>
+            </div>
+
+            <div className="p-6 pt-0">
+              {errorMsg && (
+                <div className="mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                  {errorMsg}
                 </div>
-                <div className="relative">
+              )}
+
+              <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="emailAddress">Email</Label>
                   <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    {...register('password')}
-                    className="pr-10"
+                    id="emailAddress"
+                    type="email"
+                    placeholder="m@example.com"
+                    {...register('emailAddress')}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+                  {errors.emailAddress && (
+                    <p className="text-sm text-destructive">{errors.emailAddress.message}</p>
+                  )}
                 </div>
-                {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password.message}</p>
-                )}
-              </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                />
-                <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
-                  Remember me
-                </Label>
-              </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center">
+                    <Label htmlFor="password">Password</Label>
+                    <Link
+                      to={paths.auth.jwt.resetPassword}
+                      className="ml-auto text-sm underline-offset-4 hover:underline"
+                    >
+                      Forgot your password?
+                    </Link>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      {...register('password')}
+                      className="pr-9"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-sm text-destructive">{errors.password.message}</p>
+                  )}
+                </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading || isReactivating} size="lg">
-                {isLoading ? (
-                  <>
-                    <span className="mr-2">Signing in...</span>
-                  </>
-                ) : (
-                  'Sign in'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <Button type="submit" className="w-full" disabled={isLoading || isReactivating}>
+                  {isLoading ? 'Signing in...' : 'Login'}
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  Don't have an account?{' '}
+                  <Link to={paths.auth.jwt.signUp} className="underline underline-offset-4 hover:text-foreground">
+                    Sign up
+                  </Link>
+                </p>
+              </form>
+            </div>
+          </div>
+
+          {/* Footer Text */}
+          <p className="text-balance text-center text-xs text-muted-foreground">
+            By clicking continue, you agree to our{' '}
+            <a href="#" className="underline underline-offset-4 hover:text-foreground">Terms of Service</a>
+            {' '}and{' '}
+            <a href="#" className="underline underline-offset-4 hover:text-foreground">Privacy Policy</a>.
+          </p>
+        </div>
       </div>
 
       {/* Suspended Account Modal */}
@@ -242,11 +249,11 @@ export default function SignInPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               • <strong>Reactivate:</strong> Continue with the sign-in process and restore your
               account access
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               • <strong>Keep Suspended:</strong> Close this dialog and maintain your account
               suspended status
             </p>
