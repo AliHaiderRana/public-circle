@@ -308,7 +308,7 @@ export function Step7PlanSelection({
       {selectedPlan && (
         <div className="mt-2">
           <p className="text-sm text-center text-muted-foreground mb-3">Your Plan:</p>
-          <div className="bg-sidebar-primary rounded-xl p-6 text-primary-foreground">
+          <div className="bg-sidebar-primary rounded-lg p-6 text-primary-foreground">
             <h3 className="text-xl font-bold text-center mb-4">{selectedPlan.name}</h3>
 
             {/* Plan Features */}

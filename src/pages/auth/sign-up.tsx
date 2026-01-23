@@ -11,6 +11,7 @@ import { RegionSelector } from "@/components/auth/region-selector";
 import { LanguageSelector } from "@/components/auth/language-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 
 // Step components (will be created)
@@ -213,9 +214,9 @@ export default function SignUpPage() {
         <StepIndicator activeStep={activeStep} steps={SIGNUP_STEPS} />
 
         {/* Main Signup Card */}
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+        <Card>
           {/* Header Section */}
-          <div className="flex flex-col space-y-1.5 p-6 text-center">
+          <CardHeader className="text-center">
             {/* Back Button - for steps > 4 */}
             {activeStep > 4 && (
               <div className="flex items-start mb-2">
@@ -231,23 +232,21 @@ export default function SignUpPage() {
               </div>
             )}
             {getStepTitle() && (
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {getStepTitle()}
-              </h1>
+              <CardTitle>{getStepTitle()}</CardTitle>
             )}
             {activeStep === 1 && (
-              <p className="text-sm text-muted-foreground">
+              <CardDescription>
                 Enter your email below to create your account
-              </p>
+              </CardDescription>
             )}
-          </div>
+          </CardHeader>
 
           {/* Form Section */}
-          <div className="p-6 pt-0">{renderStep()}</div>
+          <CardContent>{renderStep()}</CardContent>
 
           {/* Sign in link inside card for step 1 */}
           {activeStep === 1 && (
-            <div className="p-6 pt-0">
+            <CardContent className="pt-0">
               <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{" "}
                 <Link
@@ -257,9 +256,9 @@ export default function SignUpPage() {
                   Sign in
                 </Link>
               </p>
-            </div>
+            </CardContent>
           )}
-        </div>
+        </Card>
 
         {/* Footer Text */}
         {activeStep === 1 && (
