@@ -12,6 +12,13 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
@@ -709,17 +716,20 @@ export function ContactsListView() {
                       <Label htmlFor="rows-per-page" className="text-sm text-muted-foreground">
                         Rows:
                       </Label>
-                      <select
-                        id="rows-per-page"
-                        value={rowsPerPage}
-                        onChange={(e) => handleRowsPerPageChange(Number(e.target.value))}
-                        className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                      <Select
+                        value={String(rowsPerPage)}
+                        onValueChange={(value) => handleRowsPerPageChange(Number(value))}
                       >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                      </select>
+                        <SelectTrigger id="rows-per-page" className="h-8 w-[70px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>

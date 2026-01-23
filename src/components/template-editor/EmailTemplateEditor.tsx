@@ -383,7 +383,7 @@ export function EmailTemplateEditor({
     return (
       <div className={`relative w-full h-full ${className}`}>
         <div className="flex items-center justify-center h-full">
-          <p className="text-gray-500">Editor is disabled</p>
+          <p className="text-muted-foreground">Editor is disabled</p>
         </div>
       </div>
     );

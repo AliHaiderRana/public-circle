@@ -416,12 +416,12 @@ function ConsumptionTab({ onRefresh, isRefreshing }: ConsumptionTabProps) {
       {/* Usage Stats Cards */}
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
         {/* Bandwidth Usage Card */}
-        <Card className="border-2 hover:border-gray-200 transition-colors overflow-hidden">
-          <CardHeader className="pb-2 bg-gradient-to-r from-gray-50 to-transparent">
+        <Card className="border-2 hover:border-border transition-colors overflow-hidden">
+          <CardHeader className="pb-2 bg-gradient-to-r from-muted to-transparent">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-medium flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <HardDrive className="h-4 w-4 text-gray-600" />
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                  <HardDrive className="h-4 w-4 text-muted-foreground" />
                 </div>
                 Bandwidth Usage
               </CardTitle>
@@ -472,12 +472,12 @@ function ConsumptionTab({ onRefresh, isRefreshing }: ConsumptionTabProps) {
         </Card>
 
         {/* Email Usage Card */}
-        <Card className="border-2 hover:border-gray-200 transition-colors overflow-hidden">
-          <CardHeader className="pb-2 bg-gradient-to-r from-gray-50 to-transparent">
+        <Card className="border-2 hover:border-border transition-colors overflow-hidden">
+          <CardHeader className="pb-2 bg-gradient-to-r from-muted to-transparent">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-medium flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Mail className="h-4 w-4 text-gray-600" />
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
                 </div>
                 Email Usage
               </CardTitle>

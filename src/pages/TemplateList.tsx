@@ -337,7 +337,7 @@ export default function TemplateList() {
                             className="group relative overflow-hidden hover:shadow-lg transition-all border border-border/50"
                         >
                             {/* Thumbnail */}
-                            <div className="aspect-[4/3] relative overflow-hidden bg-gray-100">
+                            <div className="aspect-[4/3] relative overflow-hidden bg-muted">
                                 {template.thumbnailURL && !imageErrors.has(template._id || template.id) ? (
                                     <img
                                         src={template.thumbnailURL}
@@ -350,8 +350,8 @@ export default function TemplateList() {
                                         }}
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                                        <FileCode className="h-12 w-12 text-gray-400" />
+                                    <div className="w-full h-full flex items-center justify-center bg-muted/80">
+                                        <FileCode className="h-12 w-12 text-muted-foreground" />
                                     </div>
                                 )}
                                 {/* Preview Overlay */}
@@ -613,10 +613,10 @@ export default function TemplateList() {
                 </div>
               </div>
             </DialogHeader>
-            <div className="flex-1 overflow-auto bg-gray-50 p-4">
+            <div className="flex-1 overflow-auto bg-muted p-4">
               <div
                 className={cn(
-                  'mx-auto bg-white shadow-lg',
+                  'mx-auto bg-background shadow-lg',
                   previewDevice === 'mobile' ? 'max-w-sm' : 'max-w-4xl'
                 )}
                 style={{

@@ -389,7 +389,7 @@ function PlanSelectionCarousel() {
                     key={plan.id}
                     className="w-full transition-all duration-300 shadow-md rounded-lg"
                     style={{
-                      backgroundColor: planIsActive ? 'hsl(var(--sidebar-primary) / 0.15)' : '#f5f5f5',
+                      backgroundColor: planIsActive ? 'hsl(var(--sidebar-primary) / 0.15)' : 'hsl(var(--muted))',
                       border: 'none',
                     }}
                   >
@@ -404,7 +404,7 @@ function PlanSelectionCarousel() {
                         ) : (
                           <Button
                             size="sm"
-                            className="rounded-full px-3 bg-gray-800 hover:bg-gray-900 text-white text-xs"
+                            className="rounded-full px-3 bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
                             onClick={() => {
                               setSelectedPlan(plan);
                               setOpenSubscribeDialog(true);
@@ -419,7 +419,7 @@ function PlanSelectionCarousel() {
                       <div className="space-y-2 pt-6 flex-1">
                         <h3 className={cn(
                           "text-lg font-bold",
-                          planIsActive ? "text-primary" : "text-gray-800"
+                          planIsActive ? "text-primary" : "text-foreground"
                         )}>
                           {plan.name}
                         </h3>
@@ -427,7 +427,7 @@ function PlanSelectionCarousel() {
                         {plan.description && (
                           <div className={cn(
                             "flex-1",
-                            planIsActive ? "text-foreground" : "text-gray-600"
+                            planIsActive ? "text-foreground" : "text-muted-foreground"
                           )}>
                             <ul className="list-disc pl-4 space-y-0.5 text-xs">
                               {(Array.isArray(plan.description)
@@ -445,13 +445,13 @@ function PlanSelectionCarousel() {
                       <div className="flex items-end gap-1 mt-auto pt-3">
                         <span className={cn(
                           "text-xl font-bold",
-                          planIsActive ? "text-primary" : "text-gray-800"
+                          planIsActive ? "text-primary" : "text-foreground"
                         )}>
                           ${formatPrice(price)}
                         </span>
                         <span className={cn(
                           "text-xs mb-0.5",
-                          planIsActive ? "text-muted-foreground" : "text-gray-500"
+                          planIsActive ? "text-muted-foreground" : "text-muted-foreground"
                         )}>
                           per month
                         </span>
@@ -474,14 +474,16 @@ function PlanSelectionCarousel() {
                   </Button>
                   <div className="flex gap-1">
                     {regularPlans.map((_: any, index: number) => (
-                      <button
+                      <Button
                         key={index}
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handlePlanSelect(regularPlans[index], index)}
                         className={cn(
-                          "h-2 w-6 rounded-full transition-all duration-300",
+                          "h-2 w-6 p-0 min-w-0 rounded-full transition-all duration-300",
                           activeStep === index
-                            ? "bg-primary"
-                            : "bg-gray-300"
+                            ? "bg-primary hover:bg-primary"
+                            : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
                         )}
                       />
                     ))}
@@ -530,7 +532,7 @@ function PlanSelectionCarousel() {
                       )}
                       style={{
                         transform: `translateX(${relativePosition * 380}px)`,
-                        backgroundColor: isPlanActive(plan.id) ? 'hsl(var(--sidebar-primary) / 0.15)' : '#f5f5f5',
+                        backgroundColor: isPlanActive(plan.id) ? 'hsl(var(--sidebar-primary) / 0.15)' : 'hsl(var(--muted))',
                         border: 'none',
                       }}
                       onClick={() => !isActive && setActiveStep(index)}
@@ -547,7 +549,7 @@ function PlanSelectionCarousel() {
                             isActive && (
                               <Button
                                 size="sm"
-                                className="rounded-full px-4 bg-gray-800 hover:bg-gray-900 text-white"
+                                className="rounded-full px-4 bg-primary hover:bg-primary/90 text-primary-foreground"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedPlan(plan);
@@ -564,7 +566,7 @@ function PlanSelectionCarousel() {
                         <div className="space-y-4 pt-8 flex-1">
                           <h3 className={cn(
                             "text-2xl font-bold",
-                            isPlanActive(plan.id) ? "text-primary" : "text-gray-800"
+                            isPlanActive(plan.id) ? "text-primary" : "text-foreground"
                           )}>
                             {plan.name}
                           </h3>
@@ -572,7 +574,7 @@ function PlanSelectionCarousel() {
                           {plan.description && (
                             <div className={cn(
                               "flex-1",
-                              isPlanActive(plan.id) ? "text-foreground" : "text-gray-600"
+                              isPlanActive(plan.id) ? "text-foreground" : "text-muted-foreground"
                             )}>
                               <ul className="list-disc pl-5 space-y-1 text-xs">
                                 {(Array.isArray(plan.description)
@@ -590,13 +592,13 @@ function PlanSelectionCarousel() {
                         <div className="flex items-end gap-2 mt-auto">
                           <span className={cn(
                             "text-2xl font-bold",
-                            isPlanActive(plan.id) ? "text-primary" : "text-gray-800"
+                            isPlanActive(plan.id) ? "text-primary" : "text-foreground"
                           )}>
                             ${formatPrice(price)}
                           </span>
                           <span className={cn(
                             "text-sm mb-0.5",
-                            isPlanActive(plan.id) ? "text-muted-foreground" : "text-gray-500"
+                            isPlanActive(plan.id) ? "text-muted-foreground" : "text-muted-foreground"
                           )}>
                             per month
                           </span>
@@ -633,14 +635,16 @@ function PlanSelectionCarousel() {
             {/* Dots Indicator */}
             <div className="flex justify-center gap-1 mt-4">
               {regularPlans.map((_: any, index: number) => (
-                <button
+                <Button
                   key={index}
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handlePlanSelect(regularPlans[index], index)}
                   className={cn(
-                    "h-2 rounded-full transition-all duration-300",
+                    "h-2 w-6 p-0 min-w-0 rounded-full transition-all duration-300",
                     activeStep === index
-                      ? "w-6 bg-primary"
-                      : "w-6 bg-gray-300 hover:bg-gray-400"
+                      ? "bg-primary hover:bg-primary"
+                      : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
                   )}
                 />
               ))}

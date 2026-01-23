@@ -46,7 +46,7 @@ export function TemplatePreview({
             <DialogTitle>Template Preview</DialogTitle>
             <DialogDescription>No content to preview</DialogDescription>
           </DialogHeader>
-          <div className="flex items-center justify-center py-12 text-gray-500">
+          <div className="flex items-center justify-center py-12 text-muted-foreground">
             Add some content to your template to see the preview.
           </div>
         </DialogContent>
@@ -87,7 +87,7 @@ export function TemplatePreview({
             )}
           </div>
         </DialogHeader>
-        <div className="flex-1 overflow-hidden bg-gray-50 p-4">
+        <div className="flex-1 overflow-hidden bg-muted p-4">
           <style>{`
             .preview-mobile, .preview-mobile * {
               max-width: 100% !important;

@@ -263,7 +263,7 @@ export default function TemplateSelectPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               )}
-              <div className="aspect-[4/3] relative overflow-hidden bg-gray-100">
+              <div className="aspect-[4/3] relative overflow-hidden bg-muted">
                 {template.thumbnailURL && !imageErrors.has(template._id) ? (
                   <img
                     src={template.thumbnailURL}
@@ -276,8 +276,8 @@ export default function TemplateSelectPage() {
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                    <ImageIcon className="h-12 w-12 text-gray-400" />
+                  <div className="w-full h-full flex items-center justify-center bg-muted/80">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}
               </div>
@@ -311,7 +311,7 @@ export default function TemplateSelectPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               )}
-              <div className="aspect-[4/3] relative overflow-hidden bg-gray-100">
+              <div className="aspect-[4/3] relative overflow-hidden bg-muted">
                 {template.thumbnailURL && !imageErrors.has(template._id) ? (
                   <img
                     src={template.thumbnailURL}
@@ -324,8 +324,8 @@ export default function TemplateSelectPage() {
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                    <ImageIcon className="h-12 w-12 text-gray-400" />
+                  <div className="w-full h-full flex items-center justify-center bg-muted/80">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}
               </div>

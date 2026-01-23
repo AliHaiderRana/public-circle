@@ -435,8 +435,8 @@ export default function CampaignListPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Campaigns
               </CardTitle>
-              <div className="bg-gray-50 p-2 rounded-lg">
-                <Mail className="h-4 w-4 text-gray-600" />
+              <div className="bg-muted p-2 rounded-lg">
+                <Mail className="h-4 w-4 text-muted-foreground" />
               </div>
             </CardHeader>
             <CardContent>
@@ -483,8 +483,8 @@ export default function CampaignListPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Drafts
               </CardTitle>
-              <div className="bg-gray-50 p-2 rounded-lg">
-                <FileText className="h-4 w-4 text-gray-600" />
+              <div className="bg-muted p-2 rounded-lg">
+                <FileText className="h-4 w-4 text-muted-foreground" />
               </div>
             </CardHeader>
             <CardContent>

@@ -70,8 +70,8 @@ export function SesStatusBadge({
         return {
           label: 'Unknown',
           icon: AlertCircle,
-          className: 'bg-gray-500/10 text-gray-700 border-gray-500/20',
-          iconClassName: 'text-gray-600',
+          className: 'bg-muted text-muted-foreground border-border',
+          iconClassName: 'text-muted-foreground',
         };
     }
   };
