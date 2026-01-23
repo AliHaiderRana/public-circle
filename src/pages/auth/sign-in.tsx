@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -151,15 +152,15 @@ export default function SignInPage() {
 
         {/* Card */}
         <div className="flex w-full max-w-sm flex-col gap-6">
-          <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
-            <div className="flex flex-col space-y-1.5 p-6 text-center">
-              <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-              <p className="text-sm text-muted-foreground">
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle>Welcome back</CardTitle>
+              <CardDescription>
                 Enter your credentials to sign in to your account
-              </p>
-            </div>
+              </CardDescription>
+            </CardHeader>
 
-            <div className="p-6 pt-0">
+            <CardContent>
               {errorMsg && (
                 <div className="mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                   {errorMsg}
@@ -221,8 +222,8 @@ export default function SignInPage() {
                   </Link>
                 </p>
               </form>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Footer Text */}
           <p className="text-balance text-center text-xs text-muted-foreground">
