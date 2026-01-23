@@ -6,6 +6,7 @@ import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/auth/context/auth-provider';
 import { TourProvider } from '@/context/tour/tour-provider';
 import { AppRouter } from '@/routes';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -28,38 +29,33 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '40px', background: '#fee', minHeight: '100vh' }}>
-          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h1 style={{ color: '#c00', fontSize: '24px', marginBottom: '20px' }}>
-              Something went wrong
-            </h1>
-            <p style={{ color: '#a00', marginBottom: '20px' }}>
-              {this.state.error?.message || 'Unknown error'}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              style={{
-                padding: '10px 20px',
-                background: '#0066cc',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                marginBottom: '20px'
-              }}
-            >
-              Reload Page
-            </button>
-            <pre style={{
-              background: '#f5f5f5',
-              padding: '20px',
-              borderRadius: '4px',
-              overflow: 'auto',
-              maxHeight: '400px',
-              fontSize: '12px'
-            }}>
-              {this.state.error?.stack}
-            </pre>
+        <div className="min-h-screen bg-destructive/5 p-10">
+          <div className="mx-auto max-w-2xl">
+            <div className="rounded-lg border border-destructive/50 bg-background p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="rounded-full bg-destructive/10 p-2">
+                  <AlertCircle className="h-6 w-6 text-destructive" />
+                </div>
+                <h1 className="text-2xl font-semibold text-destructive">
+                  Something went wrong
+                </h1>
+              </div>
+              <p className="text-destructive/80 mb-6">
+                {this.state.error?.message || 'An unexpected error occurred'}
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors mb-6"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Reload Page
+              </button>
+              {this.state.error?.stack && (
+                <pre className="rounded-md bg-muted p-4 overflow-auto max-h-96 text-xs text-muted-foreground font-mono">
+                  {this.state.error.stack}
+                </pre>
+              )}
+            </div>
           </div>
         </div>
       );

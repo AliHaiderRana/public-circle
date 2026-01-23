@@ -69,11 +69,11 @@ export function SesStatusDialog({ open, onClose, user }: SesStatusDialogProps) {
       };
     }
     return {
-      color: 'text-gray-600',
-      bgColor: 'bg-gray-500/10',
-      borderColor: 'border-gray-500/20',
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted',
+      borderColor: 'border-border',
       icon: AlertCircle,
-      iconColor: 'text-gray-600',
+      iconColor: 'text-muted-foreground',
     };
   };
 
@@ -332,10 +332,10 @@ function getStatusConfig(status: string) {
     };
   }
   return {
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-500/10',
-    borderColor: 'border-gray-500/20',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted',
+    borderColor: 'border-border',
     icon: AlertCircle,
-    iconColor: 'text-gray-600',
+    iconColor: 'text-muted-foreground',
   };
 }

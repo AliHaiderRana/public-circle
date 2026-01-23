@@ -42,8 +42,8 @@ export function QuotaUsage({ quota }: QuotaUsageProps) {
               Current month consumption
             </p>
           </div>
-          <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
-            <Database className="h-6 w-6 text-gray-600" />
+          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+            <Database className="h-6 w-6 text-muted-foreground" />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -101,8 +101,8 @@ export function QuotaUsage({ quota }: QuotaUsageProps) {
               Current month consumption
             </p>
           </div>
-          <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
-            <Mail className="h-6 w-6 text-gray-600" />
+          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+            <Mail className="h-6 w-6 text-muted-foreground" />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

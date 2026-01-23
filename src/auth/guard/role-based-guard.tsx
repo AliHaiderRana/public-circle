@@ -30,7 +30,7 @@ export function RoleBasedGuard({
 
     if (hasContent) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center min-h-screen bg-muted">
           <div className="text-center max-w-md mx-auto p-8">
             <div className="rounded-full bg-destructive/10 p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
               <AlertTriangle className="h-8 w-8 text-destructive" />

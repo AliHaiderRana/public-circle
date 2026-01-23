@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
+import DOMPurify from 'dompurify';
 
 import { createTemplate, updateTemplate, getTemplateById } from '@/actions/templates';
 import { getFilterKeys } from '@/actions/filters';
@@ -243,15 +244,15 @@ export default function TemplateCreate() {
     if (!content) {
       return (
         <div className="flex items-center justify-center h-full min-h-[400px]">
-          <p className="text-gray-500">No content to preview. Save your template first.</p>
+          <p className="text-muted-foreground">No content to preview. Save your template first.</p>
         </div>
       );
     }
 
     return (
-      <div className="h-full overflow-auto bg-gray-50 p-4">
+      <div className="h-full overflow-auto bg-muted p-4">
         <div
-          className={`mx-auto bg-white ${
+          className={`mx-auto bg-background ${
             previewDevice === 'mobile' ? 'max-w-sm' : 'max-w-4xl'
           } shadow-lg`}
           style={{
@@ -259,16 +260,16 @@ export default function TemplateCreate() {
             transformOrigin: 'top center',
           }}
         >
-          <div dangerouslySetInnerHTML={{ __html: content }} />
+          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
         </div>
       </div>
     );
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-muted/50">
       {/* Modern Header */}
-      <div className="border-b bg-white shadow-sm sticky top-0 z-20">
+      <div className="border-b bg-background shadow-sm sticky top-0 z-20">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -279,7 +280,7 @@ export default function TemplateCreate() {
                 <h1 className="text-2xl font-bold">
                   {isEditMode ? 'Edit Template' : 'Create Template'}
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Design beautiful email templates with our visual editor
                 </p>
               </div>

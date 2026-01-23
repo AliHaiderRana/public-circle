@@ -277,14 +277,14 @@ export default function CampaignLogDetailsPage() {
           <CardContent className="pt-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
               <div className="p-4 rounded-lg border">
-                <div className="text-2xl font-bold text-gray-600">
+                <div className="text-2xl font-bold text-muted-foreground">
                   {stats.totalCampaignRuns || totalCount || 0}
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">Total Runs</div>
               </div>
 
               <div className="p-4 rounded-lg border">
-                <div className="text-2xl font-bold text-gray-600">{stats.totalEmailsSent || 0}</div>
+                <div className="text-2xl font-bold text-muted-foreground">{stats.totalEmailsSent || 0}</div>
                 <div className="text-sm text-muted-foreground mt-1">Total Sent</div>
               </div>
 

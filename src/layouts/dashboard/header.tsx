@@ -24,6 +24,7 @@ import { RegionSelector } from '@/components/auth/region-selector';
 import { LanguageSelector } from '@/components/auth/language-selector';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export function DashboardHeader() {
   const { user, checkUserSession } = useAuthContext();
@@ -91,6 +92,9 @@ export function DashboardHeader() {
             <RegionSelector disabled />
             <LanguageSelector />
           </div>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
           {/* Notifications */}
           <NotificationsDropdown />

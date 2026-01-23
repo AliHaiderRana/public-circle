@@ -77,15 +77,15 @@ export function NavTour({ steps, isCompletedTour }: NavTourProps) {
   }, [navigate]);
 
   return (
-    <div 
-      className="p-4 max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+    <div
+      className="p-4 max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent"
       style={{
         scrollbarWidth: 'thin',
-        scrollbarColor: '#d1d5db transparent',
+        scrollbarColor: 'hsl(var(--muted-foreground) / 0.3) transparent',
       }}
     >
       {/* Divider */}
-      <div className="h-px bg-gray-200 mb-2" />
+      <div className="h-px bg-border mb-2" />
 
       {/* Title with Info Icon */}
       <div className="flex items-center gap-1 mb-4">
@@ -93,7 +93,7 @@ export function NavTour({ steps, isCompletedTour }: NavTourProps) {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-gray-400 cursor-help" />
+              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
             </TooltipTrigger>
             <TooltipContent side="right" className="max-w-xs">
               <p>These steps need to be completed in order to run campaigns</p>
@@ -130,7 +130,7 @@ export function NavTour({ steps, isCompletedTour }: NavTourProps) {
                     ) : (
                       <span
                         className={cn(
-                          'text-sm text-gray-700',
+                          'text-sm text-foreground',
                           isHovered && 'font-semibold'
                         )}
                       >
@@ -143,10 +143,10 @@ export function NavTour({ steps, isCompletedTour }: NavTourProps) {
                       onClick={() => handleStepClick(step)}
                       className={cn(
                         'text-sm text-left transition-colors px-2 py-1 rounded',
-                        'hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
+                        'hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
                         isCompleted
-                          ? 'text-gray-400 line-through'
-                          : 'text-gray-700',
+                          ? 'text-muted-foreground line-through'
+                          : 'text-foreground',
                         isHovered && 'font-semibold',
                         isCompleted && 'ml-[-3px]'
                       )}
@@ -176,7 +176,7 @@ export function NavTour({ steps, isCompletedTour }: NavTourProps) {
 
       {/* Progress Bar */}
       <div className="mb-4">
-        <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-100">
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full bg-[#D4E798D9] transition-all rounded-full"
             style={{ width: `${progressPercentage}%` }}
@@ -193,7 +193,7 @@ export function NavTour({ steps, isCompletedTour }: NavTourProps) {
                 <LoadingButton
                   onClick={handleCompleteTutorial}
                   loading={loading}
-                  className="w-full bg-black hover:bg-black/90 text-white"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   Complete
                 </LoadingButton>
