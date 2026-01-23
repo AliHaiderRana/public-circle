@@ -282,7 +282,7 @@ export const dashboardRoutes: RouteObject[] = [
         path: 'subscription',
         element: <SubscriptionPage />,
       },
-      
+
       // Legacy route redirects for backward compatibility
       {
         path: 'addfilters',

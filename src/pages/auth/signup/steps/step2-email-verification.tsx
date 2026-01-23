@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { resendEmailVerification, verifyEmailCode, sendEmailVerification } from '@/actions/signup';
+import { resendEmailVerification, sendEmailVerification } from '@/actions/signup';
 import { setSession } from '@/auth/utils/jwt';
 import { toast } from 'sonner';
 import axios from '@/lib/api';
-import { CheckCircle2, XCircle, Mail, Loader2, RefreshCw } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, RefreshCw, Mail } from 'lucide-react';
 
 interface Step2EmailVerificationProps {
   activeStep: number;
@@ -23,7 +21,6 @@ export function Step2EmailVerification({
 }: Step2EmailVerificationProps) {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const [code, setCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [, setIsVerified] = useState(false);
@@ -84,22 +81,6 @@ export function Step2EmailVerification({
     };
   }, []);
 
-
-  const handleCodeVerification = async () => {
-    setIsVerifying(true);
-    try {
-      const res = await verifyEmailCode({ verificationCode: code });
-      if (res?.status === 200) {
-        setIsVerified(true);
-        toast.success('Email verified successfully!');
-        setTimeout(() => setActiveStep(3), 1000);
-      }
-    } catch {
-      // Error handled in action
-    } finally {
-      setIsVerifying(false);
-    }
-  };
 
   const handleResend = async () => {
     setIsResending(true);
@@ -210,71 +191,38 @@ export function Step2EmailVerification({
   }
 
   return (
-    <div className="space-y-6 max-w-md mx-auto">
+    <div className="flex flex-col gap-6">
       <div className="text-center space-y-4">
-        <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
-          <Mail className="h-10 w-10 text-primary" />
+        <div className="mx-auto w-14 h-14 bg-sidebar-primary/10 rounded-full flex items-center justify-center">
+          <Mail className="h-7 w-7 text-sidebar-primary" />
         </div>
-        <div>
-          <h3 className="text-xl font-semibold mb-2">Verify your email</h3>
-          <p className="text-sm text-muted-foreground">
-            We've sent a verification link to:
-          </p>
-          <div className="mt-2 p-3 bg-muted rounded-lg">
-            <p className="text-sm font-medium">{emailAddress}</p>
-          </div>
-          <p className="text-sm text-muted-foreground mt-3">
-            Please check your inbox and click the link to continue.
-          </p>
+        <p className="text-sm text-muted-foreground">
+          We've sent a verification link to:
+        </p>
+        <div className="bg-muted rounded-lg py-3 px-4 inline-block mx-auto">
+          <span className="font-medium text-foreground">{emailAddress}</span>
         </div>
       </div>
 
-      {!token && (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="code">Or enter verification code</Label>
-            <Input
-              id="code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="Enter 6-digit code"
-              maxLength={6}
-            />
-          </div>
-
-          <Button
-            type="button"
-            className="w-full"
-            onClick={handleCodeVerification}
-            disabled={isVerifying || code.length !== 6}
-          >
-            {isVerifying ? 'Verifying...' : 'Verify Email'}
-          </Button>
-        </>
-      )}
+      <p className="text-center text-sm text-muted-foreground">
+        Please check your inbox and click the link to continue.
+      </p>
 
       {!isInvited && (
-        <div className="text-center space-y-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleResend}
-            disabled={isResending || buttonDisabled || cooldownSeconds > 0}
-            className="w-full sm:w-auto"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isResending ? 'animate-spin' : ''}`} />
-            {isResending
-              ? 'Sending...'
-              : cooldownSeconds > 0
-              ? `Resend in ${cooldownSeconds}s`
-              : "Didn't receive email? Resend"}
-          </Button>
-          {cooldownSeconds > 0 && (
-            <p className="text-xs text-muted-foreground">
-              Please wait {cooldownSeconds} second{cooldownSeconds !== 1 ? 's' : ''} before resending
-            </p>
-          )}
-        </div>
+        <Button
+          type="button"
+          size="sm"
+          className="mx-auto"
+          onClick={handleResend}
+          disabled={isResending || buttonDisabled || cooldownSeconds > 0}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isResending ? 'animate-spin' : ''}`} />
+          {isResending
+            ? 'Sending...'
+            : cooldownSeconds > 0
+            ? `Resend in ${cooldownSeconds}s`
+            : 'Resend Verification Link'}
+        </Button>
       )}
     </div>
   );

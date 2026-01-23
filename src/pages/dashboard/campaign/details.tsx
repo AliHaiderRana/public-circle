@@ -673,7 +673,7 @@ export default function CampaignDetailsPage() {
                           </TableCell>
                           <TableCell>
                             {log.clicked ? (
-                              <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                              <CheckCircle2 className="h-4 w-4 text-foreground" />
                             ) : (
                               <XCircle className="h-4 w-4 text-muted-foreground" />
                             )}

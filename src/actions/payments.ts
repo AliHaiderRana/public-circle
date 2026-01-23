@@ -11,6 +11,7 @@ const swrOptions = {
   revalidateIfStale: enableServer,
   revalidateOnFocus: enableServer,
   revalidateOnReconnect: enableServer,
+  shouldRetryOnError: false, // Don't retry on error (like 400)
 };
 
 // ----------------------------------------------------------------------
@@ -111,7 +112,7 @@ export function getActivePlans() {
   const memoizedValue = useMemo(
     () => ({
       activePlans: data?.data || [],
-      isLoading,
+      isLoading: isLoading && !error, // Stop loading when error occurs
       error,
     }),
     [data, isLoading, error]
@@ -128,7 +129,7 @@ export function getActiveSubscription() {
   const memoizedValue = useMemo(
     () => ({
       subscription: data?.data || null,
-      isLoading,
+      isLoading: isLoading && !error, // Stop loading when error occurs
       error,
     }),
     [data, isLoading, error]
@@ -403,7 +404,7 @@ export function getQuotaDetails() {
 }
 
 // ----------------------------------------------------------------------
-// Overage Consumption (if available via API)
+// Overage Consumption & Usage Details
 
 export function getOverageConsumption() {
   // This endpoint may need to be created or may be part of another endpoint
@@ -414,6 +415,57 @@ export function getOverageConsumption() {
   const memoizedValue = useMemo(
     () => ({
       overageConsumption: data?.data || [],
+      isLoading,
+      error,
+    }),
+    [data, isLoading, error]
+  );
+
+  return memoizedValue;
+}
+
+export function getCampaignUsageDetails() {
+  const url = '/campaigns/usage-details';
+
+  const { data, error, isLoading } = useSWR(url, fetcher, swrOptions);
+
+  const memoizedValue = useMemo(
+    () => ({
+      campaignUsage: data?.data || [],
+      isLoading,
+      error,
+    }),
+    [data, isLoading, error]
+  );
+
+  return memoizedValue;
+}
+
+export function getTestEmailUsageDetails() {
+  const url = '/campaigns/test-usage-detail';
+
+  const { data, error, isLoading } = useSWR(url, fetcher, swrOptions);
+
+  const memoizedValue = useMemo(
+    () => ({
+      testEmailUsage: data?.data || [],
+      isLoading,
+      error,
+    }),
+    [data, isLoading, error]
+  );
+
+  return memoizedValue;
+}
+
+export function getDefaultPaymentMethod() {
+  const url = '/stripe/default-payment-method';
+
+  const { data, error, isLoading } = useSWR(url, fetcher, swrOptions);
+
+  const memoizedValue = useMemo(
+    () => ({
+      paymentMethod: data?.data || null,
       isLoading,
       error,
     }),

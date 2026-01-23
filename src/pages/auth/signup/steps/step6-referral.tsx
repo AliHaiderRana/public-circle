@@ -120,17 +120,21 @@ export function Step6Referral({
           recycle={false}
         />
       )}
-      <div className="space-y-6 max-w-md mx-auto">
-        <div className="text-center space-y-2 mb-6">
-          <Gift className="h-12 w-12 text-primary mx-auto" />
-          <h3 className="text-xl font-semibold">Enter Referral Code</h3>
-          <p className="text-sm text-muted-foreground">
-            Have a referral code? Enter it below to unlock special benefits!
-          </p>
+      <div className="flex flex-col gap-6">
+        <div className="text-center space-y-3">
+          <div className="mx-auto w-12 h-12 bg-sidebar-primary/10 rounded-full flex items-center justify-center">
+            <Gift className="h-6 w-6 text-sidebar-primary" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold">Have a Referral Code?</h3>
+            <p className="text-sm text-muted-foreground">
+              Enter it below to unlock special benefits
+            </p>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <div className="grid gap-2">
             <Label htmlFor="referalCode">Referral Code</Label>
             <div className="relative">
               <Input
@@ -158,24 +162,22 @@ export function Step6Referral({
 
           {reward && <PercentageView data={reward} />}
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={handleSkip}
-              className="flex-1"
             >
               Skip
             </Button>
             <Button
               type="submit"
               disabled={isVerifying || !referralCode}
-              className="flex-1"
             >
               {isVerifying
                 ? 'Verifying...'
                 : verificationStatus === 'success'
-                ? 'Proceed to Payments'
+                ? 'Continue'
                 : 'Apply Code'}
             </Button>
           </div>

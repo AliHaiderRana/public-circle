@@ -168,10 +168,10 @@ export function SubscriptionStatusAlert({
   // Alert for subscription expiring soon (within 7 days and not cancelled)
   if (!isCanceled && periodEnd && daysUntilEnd <= 7 && daysUntilEnd > 0) {
     return (
-      <Alert variant="default" className={cn('mb-4 border-blue-500 bg-blue-50 dark:bg-blue-950', className)}>
-        <Clock className="h-4 w-4 text-blue-600" />
-        <AlertTitle className="text-blue-800 dark:text-blue-200">Subscription Renewing Soon</AlertTitle>
-        <AlertDescription className="mt-2 text-blue-700 dark:text-blue-300">
+      <Alert variant="default" className={cn('mb-4 border-gray-500 bg-gray-50 dark:bg-gray-950', className)}>
+        <Clock className="h-4 w-4 text-gray-600" />
+        <AlertTitle className="text-gray-800 dark:text-gray-200">Subscription Renewing Soon</AlertTitle>
+        <AlertDescription className="mt-2 text-gray-700 dark:text-gray-300">
           <p>
             Your subscription will renew in {daysUntilEnd} {daysUntilEnd === 1 ? 'day' : 'days'} on{' '}
             <strong>{format(new Date(periodEnd * 1000), 'MMMM d, yyyy')}</strong>.
@@ -179,7 +179,7 @@ export function SubscriptionStatusAlert({
           <Button
             variant="outline"
             size="sm"
-            className="mt-3 border-blue-600 text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900"
+            className="mt-3 border-gray-600 text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-900"
             onClick={() => navigate(paths.dashboard.general.subscription)}
           >
             View Subscription

@@ -47,6 +47,7 @@ export function Step3Password({ setActiveStep, isInvited }: Step3PasswordProps) 
   });
 
   const password = watch('password', '');
+  const confirmPassword = watch('confirmPassword', '');
 
   const checkRequirement = (regex: RegExp) => regex.test(password);
 
@@ -56,6 +57,7 @@ export function Step3Password({ setActiveStep, isInvited }: Step3PasswordProps) 
     { label: 'One uppercase letter', check: () => checkRequirement(/[A-Z]/) },
     { label: 'One number', check: () => checkRequirement(/[0-9]/) },
     { label: 'One special character', check: () => checkRequirement(/[^A-Za-z0-9]/) },
+    { label: 'Passwords match', check: () => password && confirmPassword && password === confirmPassword },
   ];
 
   const onSubmit = async (data: FormValues) => {
@@ -90,8 +92,10 @@ export function Step3Password({ setActiveStep, isInvited }: Step3PasswordProps) 
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-md mx-auto">
-      <div className="space-y-2">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+      <h3 className="text-xl font-semibold text-center">Thanks for confirming your email!</h3>
+
+      <div className="grid gap-2">
         <Label htmlFor="password">Password</Label>
         <div className="relative">
           <Input
@@ -99,7 +103,7 @@ export function Step3Password({ setActiveStep, isInvited }: Step3PasswordProps) 
             type={showPassword ? 'text' : 'password'}
             placeholder="8+ characters"
             {...register('password')}
-            className="pr-10"
+            className="pr-9"
           />
           <button
             type="button"
@@ -109,20 +113,17 @@ export function Step3Password({ setActiveStep, isInvited }: Step3PasswordProps) 
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        {errors.password && (
-          <p className="text-sm text-destructive">{errors.password.message}</p>
-        )}
       </div>
 
-      <div className="space-y-2">
+      <div className="grid gap-2">
         <Label htmlFor="confirmPassword">Confirm Password</Label>
         <div className="relative">
           <Input
             id="confirmPassword"
             type={showConfirm ? 'text' : 'password'}
-            placeholder="Confirm password"
+            placeholder="8+ characters"
             {...register('confirmPassword')}
-            className="pr-10"
+            className="pr-9"
           />
           <button
             type="button"
@@ -132,31 +133,21 @@ export function Step3Password({ setActiveStep, isInvited }: Step3PasswordProps) 
             {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        {errors.confirmPassword && (
-          <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
-        )}
       </div>
 
-      {password && (
-        <div className="space-y-2 p-4 bg-muted rounded-lg">
-          <p className="text-sm font-medium">Password Requirements:</p>
-          {requirements.map((req, idx) => (
-            <div key={idx} className="flex items-center gap-2 text-sm">
-              {req.check() ? (
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-              ) : (
-                <XCircle className="h-4 w-4 text-gray-400" />
-              )}
-              <span className={req.check() ? 'text-green-600' : 'text-muted-foreground'}>
-                {req.label}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="space-y-1.5 text-sm text-muted-foreground">
+        {requirements.map((req, idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            <CheckCircle2 className={`h-4 w-4 ${req.check() ? 'text-sidebar-primary' : 'text-muted-foreground/40'}`} />
+            <span className={req.check() ? 'text-foreground' : ''}>
+              {req.label}
+            </span>
+          </div>
+        ))}
+      </div>
 
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Setting password...' : 'Continue'}
+        {isLoading ? 'Setting password...' : 'Next'}
       </Button>
     </form>
   );

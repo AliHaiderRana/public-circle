@@ -72,12 +72,12 @@ import { isAccountRestricted, getRestrictionMessage } from '@/utils/account-rest
 const getEventColor = (eventType: string) => {
   switch (eventType) {
     case 'Send':
-      return 'text-blue-600';
+      return 'text-gray-600';
     case 'Delivery':
       return 'text-green-600';
     case 'Open':
     case 'Click':
-      return 'text-purple-600';
+      return 'text-foreground';
     case 'Bounce':
     case 'Complaint':
     case 'Reject':
@@ -602,7 +602,7 @@ export default function CampaignMessagesPage() {
                 selectedWidget === 'emailsSent' ? 'border-primary shadow-md' : 'border-border'
               )}
             >
-              <div className="text-2xl font-bold text-blue-600">{stats?.totalEmailsSent || 0}</div>
+              <div className="text-2xl font-bold text-gray-600">{stats?.totalEmailsSent || 0}</div>
               <div className="text-sm text-muted-foreground mt-1">Total Sent</div>
             </button>
 
@@ -624,7 +624,7 @@ export default function CampaignMessagesPage() {
                 selectedWidget === 'emailsOpened' ? 'border-primary shadow-md' : 'border-border'
               )}
             >
-              <div className="text-2xl font-bold text-purple-600">{stats?.totalEmailsOpened || 0}</div>
+              <div className="text-2xl font-bold text-foreground">{stats?.totalEmailsOpened || 0}</div>
               <div className="text-sm text-muted-foreground mt-1">Opened</div>
             </button>
 
@@ -658,7 +658,7 @@ export default function CampaignMessagesPage() {
                   selectedWidget === 'emailsResent' ? 'border-primary shadow-md' : 'border-border'
                 )}
               >
-                <div className="text-2xl font-bold text-indigo-600">{stats?.totalResendEmails || 0}</div>
+                <div className="text-2xl font-bold text-gray-600">{stats?.totalResendEmails || 0}</div>
                 <div className="text-sm text-muted-foreground mt-1">Re-sent</div>
               </button>
             )}

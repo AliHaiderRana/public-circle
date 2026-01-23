@@ -9,7 +9,6 @@ import { QuotaUsage } from '@/components/dashboard/quota-usage';
 import { EmailAnalyticsChart } from '@/components/dashboard/email-analytics-chart';
 import { useAuthContext } from '@/auth/hooks/use-auth-context';
 import { paths } from '@/routes/paths';
-import { SubscriptionStatusAlert } from '@/components/subscription/subscription-status-alert';
 import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 import {
   Tooltip,
@@ -111,42 +110,22 @@ function AnalyticsPage() {
   };
 
   const formatChartData = (data: any) => {
-    if (!data || Object.keys(data).length === 0) {
-      return { categories: [], series: [] };
-    }
+    if (!data) return { categories: [], series: [] };
 
-    const categories: string[] = [];
-    const seriesMap: Record<string, number[]> = {};
-
-    // Process the data structure from the API
-    Object.entries(data).forEach(([key, value]: [string, any]) => {
-      if (Array.isArray(value)) {
-        value.forEach((item) => {
-          const categoryKey = Object.keys(item)[0];
-          if (!categories.includes(categoryKey)) {
-            categories.push(categoryKey);
-          }
-          const val = item[categoryKey];
-          if (!seriesMap[key]) {
-            seriesMap[key] = [];
-          }
-          const index = categories.indexOf(categoryKey);
-          while (seriesMap[key].length <= index) {
-            seriesMap[key].push(0);
-          }
-          seriesMap[key][index] = val || 0;
-        });
-      }
+    const categories = Object.keys(data).map((timeRange) => {
+      return timeRange;
     });
 
-    const series = Object.entries(seriesMap).map(([name, data]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      data: categories.map((_, index) => data[index] || 0),
-    }));
+    const values = Object.values(data) as number[];
 
     return {
-      categories: categories.length > 0 ? categories : ['No data'],
-      series: series.length > 0 ? series : [{ name: 'Emails', data: [0] }],
+      categories,
+      series: [
+        {
+          name: 'Emails Sent',
+          data: values,
+        },
+      ],
     };
   };
 

@@ -50,7 +50,7 @@ export default function UnSubscribePage() {
         <CardContent className="p-12 text-center">
           {isVerifyingEmail ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="h-16 w-16 animate-spin text-blue-600 mb-4" />
+              <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
               <p className="text-gray-600">Processing unsubscribe request...</p>
             </div>
           ) : (

@@ -8,8 +8,8 @@ export default function SubscriptionPage() {
       <SubscriptionStatusAlert />
 
       <div>
-        <h1 className="text-3xl font-bold">Payments</h1>
-        <p className="text-muted-foreground mt-1">Manage your subscription, billing, and payment methods</p>
+        <h1 className="text-xl font-bold">Payments</h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage your subscription, billing, and payment methods</p>
       </div>
       <SubscriptionView />
     </div>

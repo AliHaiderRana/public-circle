@@ -5,12 +5,12 @@ export function useChart(options: any = {}) {
   const isDark = theme === 'dark';
 
   const baseColors = {
-    primary: isDark ? '#3b82f6' : '#2563eb',
-    secondary: isDark ? '#8b5cf6' : '#7c3aed',
+    primary: '#d946a8',
+    secondary: isDark ? '#a0a0a0' : '#666666',
     success: isDark ? '#10b981' : '#059669',
     warning: isDark ? '#f59e0b' : '#d97706',
     error: isDark ? '#ef4444' : '#dc2626',
-    info: isDark ? '#06b6d4' : '#0891b2',
+    info: '#d946a8',
   };
 
   const textColor = isDark ? '#e5e7eb' : '#1f2937';

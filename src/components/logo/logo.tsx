@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface LogoProps {
   width?: number;
@@ -20,47 +20,26 @@ export function Logo({
   isSingle = true,
   disableLink = false,
   className,
-  href = '/dashboard',
+  href = "/dashboard",
 }: LogoProps) {
   const baseSize = {
     width: width ?? (isSingle ? 40 : 202),
     height: height ?? (isSingle ? 40 : 36),
   };
 
-  const logoContent = isSingle ? (
-    <img
-      src="/logo/logo-single.png"
-      alt="Public Circle"
-      className="h-full w-auto object-contain"
-      style={{ width: baseSize.width, height: baseSize.height }}
-      onError={(e) => {
-        // Fallback to SVG if PNG fails
-        const target = e.target as HTMLImageElement;
-        if (target.src.endsWith('.png')) {
-          target.src = '/logo/logo-single.svg';
-        }
-      }}
-    />
-  ) : (
+  const logoContent = (
     <img
       src="/logo/PCLogo.png"
       alt="Public Circle"
       className="h-full w-auto object-contain"
       style={{ width: baseSize.width, height: baseSize.height }}
-      onError={(e) => {
-        // Fallback to SVG if PNG fails
-        const target = e.target as HTMLImageElement;
-        if (target.src.endsWith('.png')) {
-          target.src = '/logo/logo-full.svg';
-        }
-      }}
     />
   );
 
   if (disableLink) {
     return (
       <div
-        className={cn('flex items-center flex-shrink-0', className)}
+        className={cn("flex items-center flex-shrink-0", className)}
         style={baseSize}
       >
         {logoContent}
@@ -71,10 +50,7 @@ export function Logo({
   return (
     <Link
       to={href}
-      className={cn(
-        'flex items-center flex-shrink-0 inline-flex',
-        className
-      )}
+      className={cn("flex items-center flex-shrink-0 inline-flex", className)}
       aria-label="Public Circle Logo"
       style={baseSize}
     >

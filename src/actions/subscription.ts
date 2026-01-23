@@ -10,6 +10,7 @@ const swrOptions = {
   revalidateIfStale: enableServer,
   revalidateOnFocus: enableServer,
   revalidateOnReconnect: enableServer,
+  shouldRetryOnError: false, // Don't retry on error (like 400)
 };
 
 // ----------------------------------------------------------------------
@@ -17,14 +18,15 @@ const swrOptions = {
 export function getSubscriptionStatus() {
   const url = endpoints.subscription.status;
 
-  const { data } = useSWR(url, fetcher, swrOptions);
+  const { data, error, isLoading } = useSWR(url, fetcher, swrOptions);
 
   const memoizedValue = useMemo(
     () => ({
       subscriptionStatus: data?.data || [],
-      isLoading: !data,
+      isLoading: isLoading && !error,
+      error,
     }),
-    [data]
+    [data, isLoading, error]
   );
 
   return memoizedValue;
@@ -33,7 +35,7 @@ export function getSubscriptionStatus() {
 export function getActiveSubscriptions() {
   const url = endpoints.subscription.active;
 
-  const { data, isLoading } = useSWR(url, fetcher, swrOptions);
+  const { data, error, isLoading } = useSWR(url, fetcher, swrOptions);
 
   const memoizedValue = useMemo(
     () => ({
@@ -43,10 +45,22 @@ export function getActiveSubscriptions() {
             (plan: any) => plan.productId === import.meta.env.VITE_REMOVE_REF_PLAN_ID
           )
         : false,
-      isSubscriptionLoading: isLoading,
+      isSubscriptionLoading: isLoading && !error,
+      error,
     }),
-    [data, isLoading]
+    [data, isLoading, error]
   );
 
   return memoizedValue;
+}
+
+// Async function to check subscription status (for overlay)
+export async function fetchSubscriptionStatus() {
+  try {
+    const response = await axios.get(endpoints.subscription.status, { timeout: 10000 });
+    return response?.data?.data || [];
+  } catch (error) {
+    console.error('Error fetching subscription status:', error);
+    return [];
+  }
 }
