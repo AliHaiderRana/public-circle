@@ -9,6 +9,7 @@ import { Logo } from "@/components/logo/logo";
 import { verifyReferalCode } from "@/actions/signup";
 import { RegionSelector } from "@/components/auth/region-selector";
 import { LanguageSelector } from "@/components/auth/language-selector";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
@@ -194,10 +195,11 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background px-6 py-8 md:px-10">
-      {/* Fixed Header - Currency and Language Selectors */}
+      {/* Fixed Header - Currency, Language Selectors and Theme Toggle */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
         <RegionSelector disabled={activeStep >= 6} />
         <LanguageSelector />
+        <ThemeToggle />
       </div>
 
       {/* Logo - always outside card */}

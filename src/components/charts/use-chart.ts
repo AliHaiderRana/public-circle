@@ -24,6 +24,7 @@ export function useChart(options: any = {}) {
       toolbar: { show: false },
       zoom: { enabled: false },
       fontFamily: 'inherit',
+      background: 'transparent',
       ...options.chart,
     },
     colors: options.colors || [baseColors.primary, baseColors.warning],

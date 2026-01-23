@@ -24,6 +24,7 @@ import { paths } from '@/routes/paths';
 import { Logo } from '@/components/logo/logo';
 import { RegionSelector } from '@/components/auth/region-selector';
 import { LanguageSelector } from '@/components/auth/language-selector';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const signInSchema = z.object({
   emailAddress: z
@@ -136,10 +137,11 @@ export default function SignInPage() {
   return (
     <>
       <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
-        {/* Fixed Header - Currency and Language Selectors */}
+        {/* Fixed Header - Currency, Language Selectors and Theme Toggle */}
         <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
           <RegionSelector />
           <LanguageSelector />
+          <ThemeToggle />
         </div>
 
         {/* Logo */}

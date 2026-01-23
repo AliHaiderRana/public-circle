@@ -145,12 +145,12 @@ export function Step6Referral({
                 className="pr-10"
               />
               {verificationStatus === 'success' && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-primary">
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
               )}
               {verificationStatus === 'error' && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-600">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-destructive">
                   <XCircle className="h-5 w-5" />
                 </div>
               )}

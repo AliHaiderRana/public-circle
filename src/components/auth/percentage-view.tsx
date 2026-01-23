@@ -66,9 +66,9 @@ export function PercentageView({ data }: PercentageViewProps) {
   };
 
   return (
-    <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
-      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-      <p className="text-sm font-medium text-green-700">{getDiscountMessage()}</p>
+    <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+      <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+      <p className="text-sm font-medium text-primary">{getDiscountMessage()}</p>
     </div>
   );
 }

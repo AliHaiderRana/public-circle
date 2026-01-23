@@ -308,7 +308,7 @@ export function Step7PlanSelection({
       {selectedPlan && (
         <div className="mt-2">
           <p className="text-sm text-center text-muted-foreground mb-3">Your Plan:</p>
-          <div className="bg-[#D76BC2] rounded-xl p-6 text-white">
+          <div className="bg-sidebar-primary rounded-xl p-6 text-primary-foreground">
             <h3 className="text-xl font-bold text-center mb-4">{selectedPlan.name}</h3>
 
             {/* Plan Features */}
@@ -320,8 +320,8 @@ export function Step7PlanSelection({
                 )
                   .filter((item: string) => item && item.trim())
                   .map((item: string, index: number) => (
-                    <li key={index} className="flex items-center gap-2 text-sm text-white/90">
-                      <span className="text-white">•</span>
+                    <li key={index} className="flex items-center gap-2 text-sm text-primary-foreground/90">
+                      <span className="text-primary-foreground">•</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -330,11 +330,11 @@ export function Step7PlanSelection({
 
             {/* Selected Add-ons in summary */}
             {selectedAddOns.length > 0 && (
-              <div className="border-t border-white/20 pt-3 mb-4 space-y-2">
+              <div className="border-t border-primary-foreground/20 pt-3 mb-4 space-y-2">
                 {selectedAddOns.map((addOn: any) => (
-                  <div key={addOn.id} className="flex items-center gap-3 text-sm text-white/90">
-                    <div className="h-5 w-5 rounded bg-white/30 flex items-center justify-center">
-                      <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <div key={addOn.id} className="flex items-center gap-3 text-sm text-primary-foreground/90">
+                    <div className="h-5 w-5 rounded bg-primary-foreground/30 flex items-center justify-center">
+                      <svg className="h-3.5 w-3.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
@@ -347,7 +347,7 @@ export function Step7PlanSelection({
             {/* Discount Badge */}
             {reward?.discountInPercentage > 0 && (
               <div className="text-center mb-3">
-                <span className="inline-block bg-white/20 text-white text-xs font-medium px-3 py-1 rounded-full">
+                <span className="inline-block bg-primary-foreground/20 text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
                   {reward.discountInPercentage}% discount applied
                 </span>
               </div>

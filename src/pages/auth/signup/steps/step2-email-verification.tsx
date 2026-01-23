@@ -149,8 +149,8 @@ export function Step2EmailVerification({
         <div
           className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center ${
             messageType === 'success'
-              ? 'bg-green-100 text-green-600'
-              : 'bg-red-100 text-red-600'
+              ? 'bg-primary/10 text-primary'
+              : 'bg-destructive/10 text-destructive'
           }`}
         >
           {messageType === 'success' ? (
@@ -163,7 +163,7 @@ export function Step2EmailVerification({
         <div>
           <h3
             className={`text-xl font-semibold mb-2 ${
-              messageType === 'success' ? 'text-green-600' : 'text-red-600'
+              messageType === 'success' ? 'text-primary' : 'text-destructive'
             }`}
           >
             {message}
