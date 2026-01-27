@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/auth/context/auth-provider';
 import { TourProvider } from '@/context/tour/tour-provider';
+import { NotificationProvider } from '@/components/notification-provider';
 import { AppRouter } from '@/routes';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
@@ -79,10 +80,12 @@ function App() {
         >
           <BrowserRouter>
             <AuthProvider>
-              <TourProvider>
-                <AppRouter />
-                <Toaster />
-              </TourProvider>
+              <NotificationProvider>
+                <TourProvider>
+                  <AppRouter />
+                  <Toaster />
+                </TourProvider>
+              </NotificationProvider>
             </AuthProvider>
           </BrowserRouter>
         </SWRConfig>

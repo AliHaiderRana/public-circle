@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useMemo, useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ChevronRight } from 'lucide-react';
 import { navData } from './nav-data';
@@ -32,6 +33,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // Pages that should remain accessible even when subscription is cancelled
 const ALLOWED_PATHS_WHEN_CANCELLED = [
@@ -75,6 +81,107 @@ function filterNavItems(items: NavItem[], userRole?: string): NavItem[] {
   });
 }
 
+function CollapsedMenuItem({
+  item,
+  pathname,
+  isActive,
+  isAllowed,
+  isSubscriptionCancelled,
+  menuButton,
+}: {
+  item: NavItem;
+  pathname: string;
+  isActive: boolean;
+  isAllowed: boolean;
+  isSubscriptionCancelled: boolean;
+  menuButton: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const itemRef = useRef<HTMLLIElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+
+  const updatePosition = useCallback(() => {
+    if (itemRef.current) {
+      const rect = itemRef.current.getBoundingClientRect();
+      setPopoverPos({ top: rect.top, left: rect.right });
+    }
+  }, []);
+
+  const checkHover = useCallback(() => {
+    requestAnimationFrame(() => {
+      const itemEl = itemRef.current;
+      const popoverEl = popoverRef.current;
+      const isOverItem = itemEl?.matches(':hover');
+      const isOverPopover = popoverEl?.matches(':hover');
+      if (!isOverItem && !isOverPopover) {
+        setOpen(false);
+      }
+    });
+  }, []);
+
+  const handleEnter = useCallback(() => {
+    updatePosition();
+    setOpen(true);
+  }, [updatePosition]);
+
+  return (
+    <SidebarMenuItem
+      ref={itemRef}
+      onMouseEnter={handleEnter}
+      onMouseLeave={checkHover}
+    >
+      {menuButton}
+      {open && createPortal(
+        <div
+          ref={popoverRef}
+          className="fixed min-w-[180px] rounded-md border bg-popover text-popover-foreground shadow-md"
+          style={{
+            top: popoverPos.top,
+            left: popoverPos.left,
+            zIndex: 50,
+            paddingLeft: 4,
+          }}
+          onMouseEnter={handleEnter}
+          onMouseLeave={checkHover}
+        >
+          <div className="rounded-md border bg-popover overflow-hidden">
+            <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b">
+              {item.title}
+            </div>
+            {item.children?.map((child) => {
+              const childIsActive = isRouteActive(child.path, pathname);
+              const childIsAllowed = !isSubscriptionCancelled || !child.path || ALLOWED_PATHS_WHEN_CANCELLED.some(
+                (allowedPath) => child.path === allowedPath || child.path?.startsWith(allowedPath + '/')
+              );
+
+              return (
+                <Link
+                  key={child.path || child.title}
+                  to={child.path || '#'}
+                  onClick={(e) => {
+                    if (!childIsAllowed) e.preventDefault();
+                    else setOpen(false);
+                  }}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors',
+                    childIsActive && 'bg-sidebar-primary/10 text-sidebar-primary font-medium',
+                    !childIsAllowed && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  {child.icon}
+                  <span>{child.title}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
+    </SidebarMenuItem>
+  );
+}
+
 interface NavMenuItemProps {
   item: NavItem;
   pathname: string;
@@ -85,6 +192,9 @@ function NavMenuItemComponent({ item, pathname, isSubscriptionCancelled }: NavMe
   const hasChildren = item.children && item.children.length > 0;
   const isChildActive = hasActiveChild(item.children, pathname);
   const isActive = isRouteActive(item.path, pathname);
+  const { state: sidebarState } = useSidebar();
+  const navigate = useNavigate();
+  const isCollapsed = sidebarState === 'collapsed';
 
   // Check if this path is allowed when subscription is cancelled
   const isAllowed = !isSubscriptionCancelled || !item.path || ALLOWED_PATHS_WHEN_CANCELLED.some(
@@ -92,6 +202,33 @@ function NavMenuItemComponent({ item, pathname, isSubscriptionCancelled }: NavMe
   );
 
   if (hasChildren) {
+    const menuButton = (
+      <SidebarMenuButton
+        isActive={isChildActive || isActive}
+        tooltip={!isCollapsed ? undefined : undefined}
+        className={cn(
+          !isAllowed && 'opacity-50 cursor-not-allowed'
+        )}
+      >
+        {item.icon}
+        <span>{item.title}</span>
+        <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
+      </SidebarMenuButton>
+    );
+
+    if (isCollapsed) {
+      return (
+        <CollapsedMenuItem
+          item={item}
+          pathname={pathname}
+          isActive={isChildActive || isActive}
+          isAllowed={isAllowed}
+          isSubscriptionCancelled={isSubscriptionCancelled}
+          menuButton={menuButton}
+        />
+      );
+    }
+
     return (
       <Collapsible
         asChild
@@ -100,17 +237,7 @@ function NavMenuItemComponent({ item, pathname, isSubscriptionCancelled }: NavMe
       >
         <SidebarMenuItem>
           <CollapsibleTrigger asChild>
-            <SidebarMenuButton
-              tooltip={item.title}
-              isActive={isChildActive || isActive}
-              className={cn(
-                !isAllowed && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              {item.icon}
-              <span>{item.title}</span>
-              <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
-            </SidebarMenuButton>
+            {menuButton}
           </CollapsibleTrigger>
           <CollapsibleContent>
             <SidebarMenuSub>
