@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell } from 'lucide-react';
 import { getNotifications } from '@/actions/notifications';
+import { getSocket } from '@/lib/socket';
 import { NotificationsCenter } from './notifications-center';
 
 export function NotificationsDropdown() {
@@ -27,13 +28,21 @@ export function NotificationsDropdown() {
   // Poll every 30 seconds for unread count
   useEffect(() => {
     fetchUnreadCount();
-    
+
     const interval = setInterval(() => {
       fetchUnreadCount();
-    }, 30000); // 30 seconds
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
+
+  // Instant update via socket
+  useEffect(() => {
+    const socket = getSocket();
+    const handleNew = () => setUnreadCount((prev) => prev + 1);
+    socket.on('notification-created', handleNew);
+    return () => { socket.off('notification-created', handleNew); };
+  }, []);
 
   // Poll on window focus
   useEffect(() => {
