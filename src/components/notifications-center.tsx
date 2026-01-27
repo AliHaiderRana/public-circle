@@ -11,19 +11,24 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, Check, CheckCheck, Trash2, Loader2 } from "lucide-react";
+import { Bell, CheckCheck, Loader2, Flag } from "lucide-react";
 import {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  deleteNotification,
 } from "@/actions/notifications";
+import { getSocket } from "@/lib/socket";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { paths } from "@/routes/paths";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface Notification {
@@ -148,6 +153,24 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
     return () => window.removeEventListener("focus", handleFocus);
   }, [isOpen]);
 
+  // Listen for real-time notifications via socket
+  useEffect(() => {
+    const socket = getSocket();
+
+    const handleNewNotification = (data: Notification) => {
+      setNotifications((prev) => {
+        if (prev.some((n) => n._id === data._id)) return prev;
+        return [data, ...prev];
+      });
+      setUnreadCount((prev) => prev + 1);
+    };
+
+    socket.on("notification-created", handleNewNotification);
+    return () => {
+      socket.off("notification-created", handleNewNotification);
+    };
+  }, []);
+
   // Infinite scroll
   useEffect(() => {
     if (!isOpen || !loadMoreRef.current) return;
@@ -199,35 +222,48 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
     }
   };
 
-  const handleDelete = async (notificationId: string) => {
-    try {
-      await deleteNotification(notificationId);
-      setNotifications((prev) => prev.filter((n) => n._id !== notificationId));
-      toast.success("Notification deleted");
-    } catch (error) {
-      console.error("Error deleting notification:", error);
-      toast.error("Failed to delete notification");
-    }
-  };
-
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.isRead) {
       handleMarkAsRead(notification._id);
     }
 
     // Navigate based on notification type
-    if (notification.metadata?.campaignId) {
-      navigate(
-        paths.dashboard.campaign.details.replace(
-          ":id",
-          notification.metadata.campaignId,
-        ),
-      );
-    } else if (notification.type === "SES_STATUS") {
-      // Navigate to email configuration or dashboard
-      navigate(paths.dashboard.configurations.emailconfiguration);
-    } else if (notification.type === "EMAIL_VERIFICATION") {
-      navigate(paths.dashboard.configurations.emailconfiguration);
+    const { type, metadata } = notification;
+
+    switch (type) {
+      case "CAMPAIGN_COMPLETED":
+      case "CAMPAIGN_FAILED":
+        if (metadata?.campaignId) {
+          navigate(paths.dashboard.logs.detail, {
+            state: { campaignId: metadata.campaignId },
+          });
+        } else {
+          navigate(paths.dashboard.logs.list);
+        }
+        break;
+      case "SES_STATUS":
+      case "EMAIL_VERIFICATION":
+      case "PRIVATE_RELAY_VERIFIED":
+      case "PRIVATE_RELAY_AUTO_UNVERIFIED":
+        navigate(paths.dashboard.configurations.emailconfiguration, {
+          state: { emailId: metadata?.emailId },
+        });
+        break;
+      case "MEMBER_SIGNUP_COMPLETED":
+        navigate(paths.dashboard.configurations.roles, {
+          state: { userId: metadata?.userId },
+        });
+        break;
+      case "CONTACT_IMPORT":
+        navigate(paths.dashboard.contacts.import);
+        break;
+      default:
+        if (metadata?.campaignId) {
+          navigate(paths.dashboard.logs.detail, {
+            state: { campaignId: metadata.campaignId },
+          });
+        }
+        break;
     }
 
     setIsOpen(false);
@@ -315,7 +351,7 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-4">
-            <ScrollArea className="h-[calc(100vh-200px)]" ref={scrollAreaRef}>
+            <div className="h-[calc(100vh-200px)] overflow-y-auto scrollbar-none" ref={scrollAreaRef}>
               {isLoading && page === 1 ? (
                 <div className="space-y-4">
                   {[...Array(5)].map((_, i) => (
@@ -355,9 +391,6 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-2">
-                            {!notification.isRead && (
-                              <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                            )}
                             <div className="flex-1 min-w-0">
                               <p
                                 className={cn(
@@ -376,36 +409,30 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {!notification.isRead && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMarkAsRead(notification._id);
-                              }}
-                            >
-                              <Check className="h-3 w-3" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(notification._id);
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        {!notification.isRead && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  className="h-6 w-6 flex items-center justify-center flex-shrink-0 rounded-full hover:bg-muted transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(notification._id);
+                                  }}
+                                >
+                                  <div className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--sidebar-primary))]" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Mark as read</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
                     </div>
                   ))}
-                  {hasMore && (
+                  {hasMore ? (
                     <div ref={loadMoreRef} className="py-4 text-center">
                       {isLoadingMore && (
                         <div className="flex items-center justify-center">
@@ -413,10 +440,17 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
                         </div>
                       )}
                     </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Flag className="h-8 w-8 text-[hsl(var(--sidebar-primary))] mb-3" />
+                      <p className="text-sm text-muted-foreground">
+                        That's all your notifications from the last 30 days.
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
       </SheetContent>

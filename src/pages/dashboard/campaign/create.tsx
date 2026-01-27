@@ -756,7 +756,7 @@ export default function CampaignCreatePage() {
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full p-0" align="start">
+                      <PopoverContent className="p-0" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
                         <Command>
                           <CommandInput placeholder="Search groups..." />
                           <CommandList>
@@ -882,7 +882,7 @@ export default function CampaignCreatePage() {
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full p-0" align="start">
+                      <PopoverContent className="p-0" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
                         <Command>
                           <CommandInput placeholder="Search emails..." />
                           <CommandList>
@@ -967,7 +967,7 @@ export default function CampaignCreatePage() {
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
+                        <PopoverContent className="p-0" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
                           <Command>
                             <CommandInput placeholder="Search templates..." />
                             <CommandList>
@@ -1175,7 +1175,7 @@ export default function CampaignCreatePage() {
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
+                    <PopoverContent className="p-0" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
                       <Command>
                         <CommandInput placeholder="Select Segment..." />
                         <CommandList>
