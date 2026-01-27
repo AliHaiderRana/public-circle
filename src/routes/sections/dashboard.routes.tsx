@@ -17,9 +17,7 @@ const DashboardPage = lazy(() => import('@/pages/dashboard'));
 
 // Campaign pages
 const CampaignListPage = lazy(() => import('@/pages/dashboard/campaign/list'));
-const CampaignDetailsPage = lazy(() => import('@/pages/dashboard/campaign/details'));
 const CampaignCreatePage = lazy(() => import('@/pages/dashboard/campaign/create'));
-const CampaignEditPage = lazy(() => import('@/pages/dashboard/campaign/edit'));
 const RecurringCampaignsPage = lazy(() => import('@/pages/dashboard/campaign/recurring'));
 
 // Template pages
@@ -43,6 +41,7 @@ const EmailConfigurationPage = lazy(() => import('@/pages/dashboard/configuratio
 const WebhooksPage = lazy(() => import('@/pages/dashboard/configurations/webhooks'));
 const RolesMembersPage = lazy(() => import('@/pages/dashboard/configurations/roles-members'));
 const NewEmailPage = lazy(() => import('@/pages/dashboard/configurations/new-email'));
+const DomainEmailsPage = lazy(() => import('@/pages/dashboard/configurations/domain-emails'));
 
 // Logs pages
 const CampaignLogsPage = lazy(() => import('@/pages/dashboard/logs/list'));
@@ -104,12 +103,8 @@ export const dashboardRoutes: RouteObject[] = [
             element: <RecurringCampaignsPage />,
           },
           {
-            path: ':id',
-            element: <CampaignDetailsPage />,
-          },
-          {
             path: 'edit/:id',
-            element: <CampaignEditPage />,
+            element: <CampaignCreatePage />,
           },
         ],
       },
@@ -222,6 +217,10 @@ export const dashboardRoutes: RouteObject[] = [
           {
             path: 'newEmail',
             element: <NewEmailPage />,
+          },
+          {
+            path: 'domain-emails',
+            element: <DomainEmailsPage />,
           },
           {
             path: 'roles&members',

@@ -19,10 +19,13 @@ import {
   cancelSubscription,
   resumeSubscription,
   createSubscription,
+  updateSubscription,
+  getCustomerRequests,
 } from '@/actions/payments';
 import { verifyReferalCode } from '@/actions/signup';
+import { useAuthContext } from '@/auth/hooks/use-auth-context';
 import { toast } from 'sonner';
-import { CheckCircle2, XCircle, AlertCircle, Loader2, Check, Gift, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, Loader2, Check, Gift, ChevronLeft, ChevronRight, Sparkles, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-confetti';
@@ -74,6 +77,8 @@ export function SubscriptionTab() {
 function PlanSelectionCarousel() {
   const { plans, isLoading: plansLoading } = getPlans(100);
   const { activePlans } = getActivePlans();
+  const { customerRequests } = getCustomerRequests();
+  const { user, checkUserSession } = useAuthContext();
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [selectedAddOns, setSelectedAddOns] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -81,10 +86,27 @@ function PlanSelectionCarousel() {
   const [userInteracted, setUserInteracted] = useState(false);
   const [openSubscribeDialog, setOpenSubscribeDialog] = useState(false);
 
+  // Plan change dialog (upgrade/downgrade) for existing subscribers
+  const [planChangeDialogOpen, setPlanChangeDialogOpen] = useState(false);
+  const [planChangeResponseMessage, setPlanChangeResponseMessage] = useState<any>(null);
+
   // Cancel/Resume subscription state
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [isProcessingCancel, setIsProcessingCancel] = useState(false);
+
+  // Add-on confirmation dialog state
+  const [addOnDialogOpen, setAddOnDialogOpen] = useState(false);
+  const [pendingAddOn, setPendingAddOn] = useState<any>(null);
+  const [addOnAction, setAddOnAction] = useState<'add' | 'remove'>('add');
+  const [isProcessingAddOn, setIsProcessingAddOn] = useState(false);
+
+  // Add-on referral code state
+  const [addOnReferralCode, setAddOnReferralCode] = useState('');
+  const [isVerifyingAddOnCode, setIsVerifyingAddOnCode] = useState(false);
+  const [addOnCodeStatus, setAddOnCodeStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [addOnVerifiedCoupon, setAddOnVerifiedCoupon] = useState<string | null>(null);
+  const [addOnRewardInfo, setAddOnRewardInfo] = useState<any>(null);
 
   // Referral code state
   const [referralCode, setReferralCode] = useState('');
@@ -95,6 +117,67 @@ function PlanSelectionCarousel() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
+  // Saved referral code from user profile OR from active subscription discount
+  const savedReferralCode = user?.referralCodeConsumed;
+  const [savedRewardInfo, setSavedRewardInfo] = useState<any>(null);
+  const [savedCodeFetched, setSavedCodeFetched] = useState(false);
+
+  // Extract discount info from active subscription (if any)
+  const activeSubscriptionDiscount = useMemo(() => {
+    if (!activePlans?.length) return null;
+    const subData = activePlans[0];
+    const discount = subData?.subscription?.discount;
+    if (discount?.coupon) {
+      return {
+        couponId: discount.coupon.id,
+        couponName: discount.coupon.name,
+        percentOff: discount.coupon.percent_off,
+        duration: discount.coupon.duration,
+        durationInMonths: discount.coupon.duration_in_months,
+      };
+    }
+    return null;
+  }, [activePlans]);
+
+  // Fetch saved referral code info on mount OR use subscription discount
+  useEffect(() => {
+    if (savedCodeFetched) return;
+
+    // If user has saved referral code, verify it
+    if (savedReferralCode) {
+      (async () => {
+        try {
+          const res = await verifyReferalCode({ referralCode: savedReferralCode });
+          if (res?.status === 200 && res?.data?.data) {
+            setSavedRewardInfo(res.data.data);
+            setVerifiedCoupon(savedReferralCode);
+            setRewardInfo(res.data.data);
+            setReferralCode(savedReferralCode);
+            setCodeVerificationStatus('success');
+          }
+        } catch {
+          setVerifiedCoupon(savedReferralCode);
+          setReferralCode(savedReferralCode);
+          setSavedRewardInfo(null);
+        } finally {
+          setSavedCodeFetched(true);
+        }
+      })();
+    }
+    // If no saved code but subscription has a discount, show it
+    else if (activeSubscriptionDiscount) {
+      const discountInfo = {
+        discountInPercentage: activeSubscriptionDiscount.percentOff,
+        type: activeSubscriptionDiscount.duration,
+        durationInMonths: activeSubscriptionDiscount.durationInMonths,
+      };
+      setSavedRewardInfo(discountInfo);
+      setRewardInfo(discountInfo);
+      setCodeVerificationStatus('success');
+      setSavedCodeFetched(true);
+    }
+  }, [savedReferralCode, savedCodeFetched, activeSubscriptionDiscount]);
+
   // Check if user has an active subscription
   const hasActiveSubscription = activePlans && activePlans.length > 0;
   const activeSubscription = hasActiveSubscription ? activePlans[0] : null;
@@ -103,6 +186,11 @@ function PlanSelectionCarousel() {
   // Check if a plan is currently subscribed
   const isPlanActive = (planId: string) => {
     return activePlans?.some((ap: any) => ap.productId === planId) || false;
+  };
+
+  // Check if an add-on is currently active in subscription
+  const isAddOnActive = (addOnId: string) => {
+    return activePlans?.some((ap: any) => ap.productId === addOnId) || false;
   };
 
   // Handle cancel subscription
@@ -146,6 +234,14 @@ function PlanSelectionCarousel() {
   }, [plans]);
 
   const maxSteps = regularPlans.length;
+
+  // Sync selectedAddOns with active add-ons from subscription
+  useEffect(() => {
+    if (addOns.length > 0 && activePlans) {
+      const activeAddOnsList = addOns.filter((addOn: any) => isAddOnActive(addOn.id));
+      setSelectedAddOns(activeAddOnsList);
+    }
+  }, [addOns, activePlans]);
 
   // Auto-select active plan or first plan (like old project)
   useEffect(() => {
@@ -195,10 +291,120 @@ function PlanSelectionCarousel() {
   };
 
   const handleAddOnToggle = (addOn: any, checked: boolean) => {
-    if (checked) {
-      setSelectedAddOns([...selectedAddOns, addOn]);
-    } else {
-      setSelectedAddOns(selectedAddOns.filter((a: any) => a.id !== addOn.id));
+    // For users without subscription, toggle directly
+    if (!hasActiveSubscription) {
+      if (checked) {
+        setSelectedAddOns([...selectedAddOns, addOn]);
+      } else {
+        setSelectedAddOns(selectedAddOns.filter((a: any) => a.id !== addOn.id));
+      }
+      return;
+    }
+
+    // For users with subscription, show confirmation dialog
+    setPendingAddOn(addOn);
+    setAddOnAction(checked ? 'add' : 'remove');
+    setAddOnDialogOpen(true);
+  };
+
+  // Verify add-on referral code
+  const handleVerifyAddOnReferralCode = async () => {
+    if (!addOnReferralCode || addOnReferralCode.trim() === '') {
+      toast.error('Please enter a referral code');
+      return;
+    }
+
+    setIsVerifyingAddOnCode(true);
+    try {
+      const res = await verifyReferalCode({ referralCode: addOnReferralCode.trim() });
+      if (res?.status === 200) {
+        setAddOnCodeStatus('success');
+        setAddOnVerifiedCoupon(addOnReferralCode.trim());
+        setAddOnRewardInfo(res?.data?.data);
+        toast.success(res?.data?.message || 'Referral code applied!');
+      } else {
+        setAddOnCodeStatus('error');
+        setAddOnVerifiedCoupon(null);
+        setAddOnRewardInfo(null);
+      }
+    } catch (error: any) {
+      setAddOnCodeStatus('error');
+      setAddOnVerifiedCoupon(null);
+      setAddOnRewardInfo(null);
+    } finally {
+      setIsVerifyingAddOnCode(false);
+    }
+  };
+
+  // Clear add-on referral code
+  const handleClearAddOnReferralCode = () => {
+    setAddOnReferralCode('');
+    setAddOnCodeStatus('idle');
+    setAddOnVerifiedCoupon(null);
+    setAddOnRewardInfo(null);
+  };
+
+  // Handle add-on confirmation for subscribed users
+  const handleConfirmAddOn = async () => {
+    if (!pendingAddOn || !activeSubscription) return;
+
+    setIsProcessingAddOn(true);
+    try {
+      // Find the active plan from regularPlans to get the price ID
+      const activePlan = regularPlans.find((plan: any) => isPlanActive(plan.id));
+
+      // Build new items array
+      const items: { price: string }[] = [];
+
+      // Add current plan price ID
+      if (activePlan?.price?.id) {
+        items.push({ price: activePlan.price.id });
+      }
+
+      // Add existing add-ons (excluding the one being toggled)
+      selectedAddOns
+        .filter((a: any) => a.id !== pendingAddOn.id)
+        .forEach((addon: any) => {
+          if (addon?.price?.id) {
+            items.push({ price: addon.price.id });
+          }
+        });
+
+      // If adding, include the new add-on
+      if (addOnAction === 'add') {
+        const newAddOnPriceId = pendingAddOn.price?.id || pendingAddOn.default_price;
+        if (newAddOnPriceId) {
+          items.push({ price: newAddOnPriceId });
+        }
+      }
+
+      // Validate that we have at least one item
+      if (items.length === 0) {
+        toast.error('Unable to update subscription: No valid plan found');
+        return;
+      }
+
+      // Pass coupon code if verified (only when adding)
+      const couponToUse = addOnAction === 'add' ? addOnVerifiedCoupon : null;
+      await updateSubscription(items, couponToUse || undefined);
+
+      // Update local state
+      if (addOnAction === 'add') {
+        setSelectedAddOns([...selectedAddOns, pendingAddOn]);
+        toast.success(`${pendingAddOn.name} added to your subscription`);
+      } else {
+        setSelectedAddOns(selectedAddOns.filter((a: any) => a.id !== pendingAddOn.id));
+        toast.success(`${pendingAddOn.name} removed from your subscription`);
+      }
+
+      setAddOnDialogOpen(false);
+      // Clear add-on referral code state
+      handleClearAddOnReferralCode();
+    } catch (error) {
+      // Error handled in action
+    } finally {
+      setIsProcessingAddOn(false);
+      setPendingAddOn(null);
     }
   };
 
@@ -268,6 +474,69 @@ function PlanSelectionCarousel() {
     }
 
     return formatPrice(Math.max(0, total));
+  };
+
+  // Handle plan change (upgrade/downgrade) for existing subscribers
+  const handleConfirmPlanChange = async () => {
+    if (!selectedPlan) {
+      toast.error('Please select a plan');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Build items array with selected plan + active add-ons
+      const items = [
+        { price: selectedPlan.price?.id || selectedPlan.default_price },
+        ...selectedAddOns.map((addOn: any) => ({
+          price: addOn.price?.id || addOn.default_price,
+        })),
+      ];
+
+      const res = await updateSubscription(items, verifiedCoupon || undefined);
+
+      if (res?.status === 200) {
+        setPlanChangeResponseMessage(res);
+        setUserInteracted(false);
+        await checkUserSession?.();
+      } else {
+        setPlanChangeDialogOpen(false);
+        setPlanChangeResponseMessage(null);
+        setVerifiedCoupon(null);
+        setRewardInfo(null);
+      }
+    } catch (error: any) {
+      // Error handled in action
+      setPlanChangeDialogOpen(false);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Close plan change dialog
+  const handleClosePlanChangeDialog = () => {
+    setPlanChangeDialogOpen(false);
+    setPlanChangeResponseMessage(null);
+    // Don't clear state if it's the saved referral code
+    if (verifiedCoupon !== savedReferralCode) {
+      setVerifiedCoupon(null);
+      setRewardInfo(null);
+      setReferralCode('');
+      setCodeVerificationStatus('idle');
+    }
+    // If it's the saved code, keep the success state
+  };
+
+  // Get the active plan from regularPlans
+  const getActivePlanFromList = () => {
+    return regularPlans.find((plan: any) => isPlanActive(plan.id));
+  };
+
+  // Check if selected plan is a downgrade
+  const isDowngrade = () => {
+    const activePlan = getActivePlanFromList();
+    if (!activePlan || !selectedPlan) return false;
+    return (selectedPlan.price?.unit_amount || 0) < (activePlan.price?.unit_amount || 0);
   };
 
   const handleConfirmSubscribe = async () => {
@@ -349,7 +618,7 @@ function PlanSelectionCarousel() {
           />
         )}
 
-        {/* Cancel/Resume Subscription Link - Top Right (like old project) */}
+        {/* Cancel/Resume Subscription Link - Top Right */}
         {hasActiveSubscription && (
           <div className="flex justify-end">
             {isCanceled ? (
@@ -397,7 +666,7 @@ function PlanSelectionCarousel() {
                       {/* Active Badge or Choose Plan Button - Top Right */}
                       <div className="absolute top-3 right-3">
                         {planIsActive ? (
-                          <Badge className="bg-green-600 hover:bg-green-600 text-white rounded-full px-3 py-1">
+                          <Badge className="bg-success hover:bg-success text-success-foreground rounded-full px-3 py-1">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
                             Active
                           </Badge>
@@ -407,7 +676,13 @@ function PlanSelectionCarousel() {
                             className="rounded-full px-3 bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
                             onClick={() => {
                               setSelectedPlan(plan);
-                              setOpenSubscribeDialog(true);
+                              // For existing subscribers, open plan change dialog
+                              // For new users, open subscribe dialog
+                              if (hasActiveSubscription) {
+                                setPlanChangeDialogOpen(true);
+                              } else {
+                                setOpenSubscribeDialog(true);
+                              }
                             }}
                           >
                             Choose Plan
@@ -541,7 +816,7 @@ function PlanSelectionCarousel() {
                         {/* Active Badge or Choose Plan Button - Top Right */}
                         <div className="absolute top-4 right-4">
                           {isPlanActive(plan.id) ? (
-                            <Badge className="bg-green-600 hover:bg-green-600 text-white rounded-full px-3 py-1">
+                            <Badge className="bg-success hover:bg-success text-success-foreground rounded-full px-3 py-1">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                               Active
                             </Badge>
@@ -553,7 +828,13 @@ function PlanSelectionCarousel() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedPlan(plan);
-                                  setOpenSubscribeDialog(true);
+                                  // For existing subscribers, open plan change dialog
+                                  // For new users, open subscribe dialog
+                                  if (hasActiveSubscription) {
+                                    setPlanChangeDialogOpen(true);
+                                  } else {
+                                    setOpenSubscribeDialog(true);
+                                  }
                                 }}
                               >
                                 Choose Plan
@@ -661,14 +942,35 @@ function PlanSelectionCarousel() {
               <div className="space-y-1">
                 {addOns.map((addOn: any, index: number) => {
                   const isChecked = selectedAddOns.some((a: any) => a.id === addOn.id);
+                  const isDedicatedIP = addOn.name?.toLowerCase().includes('dedicated');
+                  const isRemoveReference = addOn.name?.toLowerCase().includes('remove') ||
+                                            addOn.name?.toLowerCase().includes('reference');
+                  // Check if Dedicated IP request is pending
+                  const isDedicatedIPPending = isDedicatedIP &&
+                    customerRequests?.length > 0 &&
+                    customerRequests[0]?.requestStatus === 'PENDING';
 
                   return (
                     <div key={addOn.id}>
                       <div className="flex items-center justify-between py-2 px-1">
-                        <div>
-                          <h3 className="text-sm font-semibold">{addOn.name}</h3>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold">{addOn.name}</h3>
+                            {(isDedicatedIP || isRemoveReference) && (
+                              <div className="group relative">
+                                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-56 p-2 bg-popover border rounded shadow-lg text-xs z-10">
+                                  {isDedicatedIP
+                                    ? 'Get a dedicated IP address to improve your email deliverability and sender reputation.'
+                                    : 'Remove the "Powered by Public Circles" branding from your emails.'}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">
-                            {addOn.description || "No description available"}
+                            {addOn.description || (isDedicatedIP
+                              ? 'Request will be processed within 24 hours'
+                              : 'No description available')}
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
@@ -678,10 +980,20 @@ function PlanSelectionCarousel() {
                           <Switch
                             checked={isChecked}
                             onCheckedChange={(checked) => handleAddOnToggle(addOn, checked)}
-                            className="data-[state=checked]:bg-green-600 scale-90"
+                            disabled={isDedicatedIPPending}
+                            className="data-[state=checked]:bg-primary scale-90"
                           />
                         </div>
                       </div>
+                      {/* Show pending request info for Dedicated IP */}
+                      {isDedicatedIPPending && (
+                        <div className="flex items-center gap-2 px-1 pb-2">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">
+                            Your request is forwarded and will be processed in 24hrs.
+                          </p>
+                        </div>
+                      )}
                       {index < addOns.length - 1 && (
                         <Separator className="border-dashed my-1" />
                       )}
@@ -759,22 +1071,48 @@ function PlanSelectionCarousel() {
               </Card>
             )}
 
+            {/* Saved Referral Code / Active Discount Banner - shows when saved code or subscription discount exists but not yet applied via form */}
+            {(savedReferralCode || activeSubscriptionDiscount) && !verifiedCoupon && (
+              <div className="p-4 bg-muted border rounded-lg">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-sm font-semibold text-success">
+                        {savedReferralCode ? 'Referral code applied:' : 'Discount applied:'}
+                      </span>
+                      <Badge className="bg-foreground text-background">
+                        {savedReferralCode || activeSubscriptionDiscount?.couponName || 'Active Discount'}
+                      </Badge>
+                    </div>
+                    {(savedRewardInfo || activeSubscriptionDiscount) && (
+                      <p className="text-sm text-muted-foreground">
+                        {(savedRewardInfo?.type === 'forever' || activeSubscriptionDiscount?.duration === 'forever')
+                          ? `You have ${savedRewardInfo?.discountInPercentage || activeSubscriptionDiscount?.percentOff}% discount`
+                          : `You have ${savedRewardInfo?.discountInPercentage || activeSubscriptionDiscount?.percentOff}% discount for ${savedRewardInfo?.durationInMonths || activeSubscriptionDiscount?.durationInMonths}${(savedRewardInfo?.durationInMonths || activeSubscriptionDiscount?.durationInMonths) > 1 ? ' months' : ' month'}`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Referral Code Section */}
             <Card className="overflow-hidden border-2 border-dashed border-primary/30">
               <CardContent className="p-0">
                 {codeVerificationStatus === 'success' && (
-                  <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-b border-green-200 p-3 sm:p-5">
+                  <div className="bg-primary/5 border-b border-primary/20 p-3 sm:p-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
                       <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center ring-2 ring-green-200 flex-shrink-0">
-                          <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20 flex-shrink-0">
+                          <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                         </div>
                         <div>
-                          <p className="font-bold text-sm sm:text-base text-green-900 flex items-center gap-2">
+                          <p className="font-bold text-sm sm:text-base text-foreground flex items-center gap-2">
                             Referral Code Applied!
-                            <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 animate-pulse" />
+                            <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-primary animate-pulse" />
                           </p>
-                          <p className="text-xs sm:text-sm text-green-700 mt-0.5 sm:mt-1">
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
                             {rewardInfo?.discountInPercentage
                               ? `${rewardInfo.discountInPercentage}% discount `
                               : rewardInfo?.trialInDays
@@ -784,7 +1122,7 @@ function PlanSelectionCarousel() {
                           </p>
                         </div>
                       </div>
-                      <Badge className="bg-gradient-to-r from-green-600 to-emerald-600 text-white w-fit text-xs">
+                      <Badge className="bg-primary text-primary-foreground w-fit text-xs">
                         <Gift className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
                         {referralCode}
                       </Badge>
@@ -799,12 +1137,12 @@ function PlanSelectionCarousel() {
                         <div className={cn(
                           "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-300 flex-shrink-0",
                           codeVerificationStatus === 'success'
-                            ? "bg-gradient-to-br from-green-100 to-emerald-100 ring-2 ring-green-200"
-                            : "bg-gradient-to-br from-primary/10 to-primary/5"
+                            ? "bg-primary/10 ring-2 ring-primary/20"
+                            : "bg-primary/10"
                         )}>
                           <Gift className={cn(
                             "h-5 w-5 sm:h-6 sm:w-6",
-                            codeVerificationStatus === 'success' ? "text-green-600" : "text-primary"
+                            codeVerificationStatus === 'success' ? "text-primary" : "text-primary"
                           )} />
                         </div>
                         <div className="text-left flex-1 min-w-0">
@@ -902,8 +1240,8 @@ function PlanSelectionCarousel() {
                   </span>
                 </div>
                 {verifiedCoupon && rewardInfo && (
-                  <div className="p-2 sm:p-3 bg-green-50 rounded-lg border border-green-200">
-                    <p className="text-xs sm:text-sm font-medium text-green-700">
+                  <div className="p-2 sm:p-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <p className="text-xs sm:text-sm font-medium text-primary">
                       {rewardInfo.discountInPercentage > 0
                         ? `${rewardInfo.discountInPercentage}% discount applied!`
                         : 'Special offer applied!'}
@@ -1016,6 +1354,341 @@ function PlanSelectionCarousel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Plan Change Dialog (Upgrade/Downgrade) */}
+      <Dialog open={planChangeDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          handleClosePlanChangeDialog();
+        } else {
+          setPlanChangeDialogOpen(open);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          {planChangeResponseMessage ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Update Subscription</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col items-center justify-center py-6">
+                {planChangeResponseMessage.status === 200 ? (
+                  <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mb-4">
+                    <CheckCircle2 className="h-12 w-12 text-success" />
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                    <AlertCircle className="h-12 w-12 text-destructive" />
+                  </div>
+                )}
+                <p className={cn(
+                  "text-lg font-bold text-center",
+                  planChangeResponseMessage.status === 200 ? "text-success" : "text-destructive"
+                )}>
+                  {planChangeResponseMessage?.data?.message || 'Subscription updated successfully'}
+                </p>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleClosePlanChangeDialog}>
+                  Acknowledge
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Update Subscription</DialogTitle>
+                <DialogDescription>
+                  {isDowngrade() ? (
+                    <>Your downgrade request for <strong>{selectedPlan?.name}</strong> Plan will be scheduled.</>
+                  ) : (
+                    <>Are you sure you want to subscribe to the <strong>{selectedPlan?.name}</strong>?</>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+
+              {/* Saved Referral Code / Active Discount Banner */}
+              {(savedReferralCode || activeSubscriptionDiscount) && (
+                <div className="p-4 bg-muted border rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-sm font-semibold text-success">
+                          {savedReferralCode ? 'Referral code applied:' : 'Discount applied:'}
+                        </span>
+                        <Badge className="bg-foreground text-background">
+                          {savedReferralCode || activeSubscriptionDiscount?.couponName || 'Active Discount'}
+                        </Badge>
+                      </div>
+                      {(savedRewardInfo || activeSubscriptionDiscount) && (
+                        <p className="text-sm text-muted-foreground">
+                          {(savedRewardInfo?.type === 'forever' || activeSubscriptionDiscount?.duration === 'forever')
+                            ? `You have ${savedRewardInfo?.discountInPercentage || activeSubscriptionDiscount?.percentOff}% discount`
+                            : `You have ${savedRewardInfo?.discountInPercentage || activeSubscriptionDiscount?.percentOff}% discount for ${savedRewardInfo?.durationInMonths || activeSubscriptionDiscount?.durationInMonths}${(savedRewardInfo?.durationInMonths || activeSubscriptionDiscount?.durationInMonths) > 1 ? ' months' : ' month'}`}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Referral Code Input Section */}
+              <Accordion type="single" collapsible className="w-full border rounded-lg">
+                <AccordionItem value="referral-code" className="border-none">
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <Gift className="h-5 w-5 text-primary" />
+                      <div className="text-left">
+                        <p className="font-semibold text-sm">Have a referral code?</p>
+                        <p className="text-xs text-muted-foreground">Enter it to unlock exclusive rewards</p>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="space-y-3">
+                      {codeVerificationStatus === 'success' ? (
+                        <div className="flex items-center justify-between p-3 bg-success/10 border border-success/20 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-success" />
+                            <span className="text-sm text-success font-medium">
+                              Code applied: {verifiedCoupon}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleClearReferralCode}
+                            className="h-7 px-2"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Input
+                              placeholder="Enter referral code"
+                              value={referralCode}
+                              onChange={(e) => {
+                                setReferralCode(e.target.value);
+                                if (codeVerificationStatus !== 'idle') {
+                                  setCodeVerificationStatus('idle');
+                                }
+                              }}
+                              disabled={isVerifyingCode}
+                              className={cn(
+                                codeVerificationStatus === 'error' && 'border-destructive'
+                              )}
+                            />
+                            {codeVerificationStatus === 'error' && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-destructive">
+                                <XCircle className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            onClick={handleVerifyReferralCode}
+                            disabled={isVerifyingCode || !referralCode.trim()}
+                            size="sm"
+                          >
+                            {isVerifyingCode ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              'Apply'
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                      {codeVerificationStatus === 'error' && (
+                        <p className="text-xs text-destructive">
+                          Invalid referral code. Please check and try again.
+                        </p>
+                      )}
+
+                      {rewardInfo && (
+                        <p className="text-xs text-muted-foreground">
+                          {rewardInfo?.discountInPercentage
+                            ? `${rewardInfo.discountInPercentage}% discount will be applied`
+                            : rewardInfo?.trialInDays
+                              ? `${Math.floor(rewardInfo.trialInDays / 30)} month free trial will be applied`
+                              : 'Discount will be applied'}
+                        </p>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button
+                  variant="outline"
+                  onClick={handleClosePlanChangeDialog}
+                  disabled={isProcessing}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmPlanChange}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Confirm Subscription'
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add-on Confirmation Dialog */}
+      <Dialog open={addOnDialogOpen} onOpenChange={(open) => {
+        setAddOnDialogOpen(open);
+        if (!open) {
+          handleClearAddOnReferralCode();
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {addOnAction === 'add' ? 'Add' : 'Remove'} {pendingAddOn?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {addOnAction === 'add' ? (
+                <>
+                  You are about to add <strong>{pendingAddOn?.name}</strong> to your subscription.
+                  <br /><br />
+                  <span className="text-foreground font-medium">
+                    Additional cost: ${formatPrice(pendingAddOn?.price?.unit_amount || 0)}/month
+                  </span>
+                  <br /><br />
+                  This will be prorated and added to your next billing cycle.
+                </>
+              ) : (
+                <>
+                  You are about to remove <strong>{pendingAddOn?.name}</strong> from your subscription.
+                  <br /><br />
+                  The change will take effect at the end of your current billing period.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Referral Code Section - Only show when adding */}
+          {addOnAction === 'add' && (
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Gift className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Have a referral code?</span>
+              </div>
+
+              {addOnCodeStatus === 'success' ? (
+                <div className="flex items-center justify-between p-3 bg-success/10 border border-success/20 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <span className="text-sm text-success font-medium">
+                      Code applied: {addOnVerifiedCoupon}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearAddOnReferralCode}
+                    className="h-7 px-2"
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      placeholder="Enter referral code"
+                      value={addOnReferralCode}
+                      onChange={(e) => {
+                        setAddOnReferralCode(e.target.value);
+                        if (addOnCodeStatus !== 'idle') {
+                          setAddOnCodeStatus('idle');
+                        }
+                      }}
+                      disabled={isVerifyingAddOnCode}
+                      className={cn(
+                        addOnCodeStatus === 'error' && 'border-destructive'
+                      )}
+                    />
+                    {addOnCodeStatus === 'error' && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-destructive">
+                        <XCircle className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleVerifyAddOnReferralCode}
+                    disabled={isVerifyingAddOnCode || !addOnReferralCode.trim()}
+                    size="sm"
+                  >
+                    {isVerifyingAddOnCode ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Apply'
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {addOnCodeStatus === 'error' && (
+                <p className="text-xs text-destructive">
+                  Invalid referral code. Please check and try again.
+                </p>
+              )}
+
+              {addOnRewardInfo && (
+                <p className="text-xs text-muted-foreground">
+                  {addOnRewardInfo?.discountInPercentage
+                    ? `${addOnRewardInfo.discountInPercentage}% discount will be applied`
+                    : addOnRewardInfo?.trialInDays
+                      ? `${Math.floor(addOnRewardInfo.trialInDays / 30)} month free trial will be applied`
+                      : 'Discount will be applied'}
+                </p>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddOnDialogOpen(false);
+                setPendingAddOn(null);
+                handleClearAddOnReferralCode();
+              }}
+              disabled={isProcessingAddOn}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant={addOnAction === 'remove' ? 'destructive' : 'default'}
+              onClick={handleConfirmAddOn}
+              disabled={isProcessingAddOn}
+            >
+              {isProcessingAddOn ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                `Yes, ${addOnAction === 'add' ? 'Add' : 'Remove'} Add-on`
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       </div>
     </TooltipProvider>
   );

@@ -1,16 +1,24 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getAllCampaigns, updateCampaign } from '@/actions/campaign';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { mutate } from "swr";
+import {
+  getAllCampaigns,
+  updateCampaign,
+  archiveCampaign,
+  getCampaignSegmentCounts,
+  deleteCampaign,
+} from "@/actions/campaign";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -18,8 +26,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+} from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -27,24 +41,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { paths } from '@/routes/paths';
+} from "@/components/ui/tooltip";
+import { paths } from "@/routes/paths";
 import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Eye,
   Edit,
   Play,
   Pause,
   RefreshCw,
-  Calendar,
   Clock,
   Repeat,
   Loader2,
@@ -53,17 +65,29 @@ import {
   ArrowUp,
   ArrowDown,
   Plus,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import dayjs from 'dayjs';
-import duration from 'dayjs/plugin/duration';
-import relativeTime from 'dayjs/plugin/relativeTime';
+  BarChart3,
+  Users,
+  Archive,
+  ArchiveRestore,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
-type SortField = 'campaignName' | 'recurringPeriod' | 'lastProcessed' | 'nextRun' | 'processedCount' | 'status';
-type SortOrder = 'ASC' | 'DSC';
+type SortField =
+  | "campaignName"
+  | "recurringPeriod"
+  | "lastProcessed"
+  | "nextRun"
+  | "processedCount"
+  | "status";
+type SortOrder = "ASC" | "DSC";
 
 interface RecurringCampaign {
   _id: string;
@@ -83,21 +107,21 @@ interface RecurringCampaign {
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status?.toUpperCase()) {
-    case 'ACTIVE':
-      return 'default';
-    case 'PAUSED':
-      return 'outline';
-    case 'ARCHIVED':
-      return 'secondary';
+    case "ACTIVE":
+      return "default";
+    case "PAUSED":
+      return "outline";
+    case "ARCHIVED":
+      return "secondary";
     default:
-      return 'outline';
+      return "outline";
   }
 };
 
 const calculateNextRun = (campaign: RecurringCampaign): string | null => {
   if (!campaign.recurringPeriod) return null;
 
-  const parts = campaign.recurringPeriod.split(' ');
+  const parts = campaign.recurringPeriod.split(" ");
   const amount = parseInt(parts[0], 10);
   const unit = parts[1];
 
@@ -105,16 +129,16 @@ const calculateNextRun = (campaign: RecurringCampaign): string | null => {
 
   // Convert unit to dayjs duration unit
   const unitMap: Record<string, string> = {
-    minute: 'minute',
-    minutes: 'minute',
-    hour: 'hour',
-    hours: 'hour',
-    day: 'day',
-    days: 'day',
-    month: 'month',
-    months: 'month',
-    year: 'year',
-    years: 'year',
+    minute: "minute",
+    minutes: "minute",
+    hour: "hour",
+    hours: "hour",
+    day: "day",
+    days: "day",
+    month: "month",
+    months: "month",
+    year: "year",
+    years: "year",
   };
 
   const dayjsUnit = unitMap[unit.toLowerCase()];
@@ -124,30 +148,30 @@ const calculateNextRun = (campaign: RecurringCampaign): string | null => {
   const baseTime = campaign.lastProcessed
     ? dayjs(campaign.lastProcessed)
     : campaign.runSchedule
-    ? dayjs(campaign.runSchedule)
-    : dayjs();
+      ? dayjs(campaign.runSchedule)
+      : dayjs();
 
   const nextRun = baseTime.add(amount, dayjsUnit as any);
   return nextRun.toISOString();
 };
 
 const formatRecurringPeriod = (period: string): string => {
-  if (!period) return '-';
-  const parts = period.split(' ');
+  if (!period) return "-";
+  const parts = period.split(" ");
   const amount = parts[0];
-  const unit = parts[1]?.toLowerCase() || '';
-  
+  const unit = parts[1]?.toLowerCase() || "";
+
   const unitLabels: Record<string, string> = {
-    minute: 'minute',
-    minutes: 'minutes',
-    hour: 'hour',
-    hours: 'hours',
-    day: 'day',
-    days: 'days',
-    month: 'month',
-    months: 'months',
-    year: 'year',
-    years: 'years',
+    minute: "minute",
+    minutes: "minutes",
+    hour: "hour",
+    hours: "hours",
+    day: "day",
+    days: "days",
+    month: "month",
+    months: "months",
+    year: "year",
+    years: "years",
   };
 
   const label = unitLabels[unit] || unit;
@@ -156,62 +180,71 @@ const formatRecurringPeriod = (period: string): string => {
 
 export default function RecurringCampaignsPage() {
   const navigate = useNavigate();
-  const [campaigns, setCampaigns] = useState<RecurringCampaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [totalCount, setTotalCount] = useState(0);
-  const [sortField, setSortField] = useState<SortField>('lastProcessed');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('DSC');
-  const [updatingCampaignId, setUpdatingCampaignId] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>("lastProcessed");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("DSC");
+  const [updatingCampaignId, setUpdatingCampaignId] = useState<string | null>(
+    null,
+  );
   const [pauseDialogOpen, setPauseDialogOpen] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<RecurringCampaign | null>(null);
+  const [selectedCampaign, setSelectedCampaign] =
+    useState<RecurringCampaign | null>(null);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [campaignToArchive, setCampaignToArchive] =
+    useState<RecurringCampaign | null>(null);
+  const [archiveAction, setArchiveAction] = useState<"archive" | "unarchive">(
+    "archive",
+  );
+  const [archivingCampaignId, setArchivingCampaignId] = useState<string | null>(
+    null,
+  );
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [campaignToDelete, setCampaignToDelete] =
+    useState<RecurringCampaign | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [segmentCountLoadingId, setSegmentCountLoadingId] = useState<
+    string | null
+  >(null);
+  const [segmentCountDialogOpen, setSegmentCountDialogOpen] = useState(false);
+  const [segmentCountResult, setSegmentCountResult] = useState<any>(null);
 
-  // Filter campaigns to only show recurring ones
-  const fetchCampaigns = async () => {
-    setLoading(true);
-    try {
-      const response = await getAllCampaigns({
-        page,
-        pageSize,
-        sortBy: sortField,
-        sortOrder: sortOrder.toLowerCase(),
-        search: searchTerm || undefined,
-        archiveFilter: 'active', // Only show active campaigns
-      });
+  // Use getAllCampaigns hook (uses SWR internally)
+  const { allCampaigns, isLoading: loading } = getAllCampaigns(
+    page,
+    pageSize,
+    undefined,
+    searchTerm || undefined,
+    sortField,
+    sortOrder,
+    undefined,
+    "active",
+  );
 
-      if (response?.data?.data) {
-        // Filter to only recurring campaigns
-        const recurringCampaigns = response.data.data.allCampaigns?.filter(
-          (campaign: any) => campaign.isRecurring === true
-        ) || [];
+  // Filter to only recurring campaigns
+  const campaigns: RecurringCampaign[] = useMemo(() => {
+    return (allCampaigns || []).filter(
+      (campaign: any) => campaign.isRecurring === true,
+    );
+  }, [allCampaigns]);
 
-        setCampaigns(recurringCampaigns);
-        setTotalCount(recurringCampaigns.length);
-      }
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to fetch recurring campaigns');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCampaigns();
-  }, [page, pageSize, sortField, sortOrder, searchTerm]);
+  const totalCount = campaigns.length;
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortOrder(sortOrder === 'ASC' ? 'DSC' : 'ASC');
+      setSortOrder(sortOrder === "ASC" ? "DSC" : "ASC");
     } else {
       setSortField(field);
-      setSortOrder('DSC');
+      setSortOrder("DSC");
     }
   };
 
-  const handlePlayPause = async (campaign: RecurringCampaign, newStatus: 'ACTIVE' | 'PAUSED') => {
-    if (newStatus === 'PAUSED') {
+  const handlePlayPause = async (
+    campaign: RecurringCampaign,
+    newStatus: "ACTIVE" | "PAUSED",
+  ) => {
+    if (newStatus === "PAUSED") {
       setSelectedCampaign(campaign);
       setPauseDialogOpen(true);
       return;
@@ -220,16 +253,21 @@ export default function RecurringCampaignsPage() {
     await updateCampaignStatus(campaign, newStatus);
   };
 
-  const updateCampaignStatus = async (campaign: RecurringCampaign, status: 'ACTIVE' | 'PAUSED') => {
+  const updateCampaignStatus = async (
+    campaign: RecurringCampaign,
+    status: "ACTIVE" | "PAUSED",
+  ) => {
     setUpdatingCampaignId(campaign._id);
     try {
       const response = await updateCampaign(campaign._id, { status });
       if (response?.data?.message) {
         toast.success(response.data.message);
-        fetchCampaigns();
+        mutate(
+          (key: any) => typeof key === "string" && key.startsWith("/campaigns"),
+        );
       }
     } catch (error: any) {
-      toast.error(error?.message || 'Failed to update campaign status');
+      toast.error(error?.message || "Failed to update campaign status");
     } finally {
       setUpdatingCampaignId(null);
       setPauseDialogOpen(false);
@@ -238,7 +276,85 @@ export default function RecurringCampaignsPage() {
   };
 
   const handleRefresh = () => {
-    fetchCampaigns();
+    mutate(
+      (key: any) => typeof key === "string" && key.startsWith("/campaigns"),
+    );
+  };
+
+  const handleOpenArchiveDialog = (
+    campaign: RecurringCampaign,
+    action: "archive" | "unarchive",
+  ) => {
+    setCampaignToArchive(campaign);
+    setArchiveAction(action);
+    setArchiveDialogOpen(true);
+  };
+
+  const handleArchiveConfirm = async () => {
+    if (campaignToArchive && archiveAction) {
+      setArchivingCampaignId(campaignToArchive._id);
+      try {
+        const isArchived = archiveAction === "archive";
+        const res = await archiveCampaign(campaignToArchive._id, isArchived);
+        if (res?.status === 200) {
+          toast.success(
+            res?.data?.message ||
+              `Campaign ${archiveAction === "archive" ? "archived" : "unarchived"} successfully`,
+          );
+          handleRefresh();
+        } else {
+          toast.error(res?.data?.message || `Failed to ${archiveAction} campaign`);
+        }
+      } catch (error: any) {
+        toast.error(error?.message || `Failed to ${archiveAction} campaign`);
+      } finally {
+        setArchivingCampaignId(null);
+      }
+    }
+    setArchiveDialogOpen(false);
+    setCampaignToArchive(null);
+  };
+
+  const handleCheckSegmentCount = async (campaign: RecurringCampaign) => {
+    setSegmentCountLoadingId(campaign._id);
+    try {
+      const response = await getCampaignSegmentCounts(campaign._id);
+      if (response?.status === 200) {
+        setSegmentCountResult(response.data?.data);
+        setSegmentCountDialogOpen(true);
+      } else {
+        toast.error(response?.data?.message || "Failed to fetch segment count");
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to fetch segment count");
+    } finally {
+      setSegmentCountLoadingId(null);
+    }
+  };
+
+  const handleOpenDeleteDialog = (campaign: RecurringCampaign) => {
+    setCampaignToDelete(campaign);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!campaignToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await deleteCampaign(campaignToDelete._id);
+      if (res?.status === 200) {
+        toast.success("Campaign deleted successfully");
+        handleRefresh();
+      } else {
+        toast.error(res?.data?.message || "Failed to delete campaign");
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to delete campaign");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setCampaignToDelete(null);
+    }
   };
 
   const campaignsWithNextRun = useMemo(() => {
@@ -252,7 +368,7 @@ export default function RecurringCampaignsPage() {
     if (sortField !== field) {
       return <ArrowUpDown className="h-4 w-4 text-muted-foreground" />;
     }
-    return sortOrder === 'ASC' ? (
+    return sortOrder === "ASC" ? (
       <ArrowUp className="h-4 w-4" />
     ) : (
       <ArrowDown className="h-4 w-4" />
@@ -272,7 +388,9 @@ export default function RecurringCampaignsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={handleRefresh} disabled={loading}>
-            <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
+            <RefreshCw
+              className={cn("h-4 w-4 mr-2", loading && "animate-spin")}
+            />
             Refresh
           </Button>
           <Button onClick={() => navigate(paths.dashboard.campaign.new)}>
@@ -286,12 +404,16 @@ export default function RecurringCampaignsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Recurring</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Recurring
+            </CardTitle>
             <Repeat className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalCount}</div>
-            <p className="text-xs text-muted-foreground">Active recurring campaigns</p>
+            <p className="text-xs text-muted-foreground">
+              Active recurring campaigns
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -301,7 +423,7 @@ export default function RecurringCampaignsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {campaigns.filter((c) => c.status === 'ACTIVE').length}
+              {campaigns.filter((c) => c.status === "ACTIVE").length}
             </div>
             <p className="text-xs text-muted-foreground">Currently running</p>
           </CardContent>
@@ -313,21 +435,25 @@ export default function RecurringCampaignsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {campaigns.filter((c) => c.status === 'PAUSED').length}
+              {campaigns.filter((c) => c.status === "PAUSED").length}
             </div>
             <p className="text-xs text-muted-foreground">Temporarily stopped</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Executions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Executions
+            </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {campaigns.reduce((sum, c) => sum + (c.processedCount || 0), 0)}
             </div>
-            <p className="text-xs text-muted-foreground">Total runs completed</p>
+            <p className="text-xs text-muted-foreground">
+              Total runs completed
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -336,7 +462,9 @@ export default function RecurringCampaignsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Campaigns</CardTitle>
-          <CardDescription>Search and filter recurring campaigns</CardDescription>
+          <CardDescription>
+            Search and filter recurring campaigns
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4 mb-4">
@@ -381,7 +509,7 @@ export default function RecurringCampaignsPage() {
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort('campaignName')}
+                      onClick={() => handleSort("campaignName")}
                     >
                       ID
                       <SortIcon field="campaignName" />
@@ -392,7 +520,7 @@ export default function RecurringCampaignsPage() {
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort('campaignName')}
+                      onClick={() => handleSort("campaignName")}
                     >
                       Campaign Name
                       <SortIcon field="campaignName" />
@@ -403,7 +531,7 @@ export default function RecurringCampaignsPage() {
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort('recurringPeriod')}
+                      onClick={() => handleSort("recurringPeriod")}
                     >
                       Repeat Every
                       <SortIcon field="recurringPeriod" />
@@ -414,7 +542,7 @@ export default function RecurringCampaignsPage() {
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort('lastProcessed')}
+                      onClick={() => handleSort("lastProcessed")}
                     >
                       Last Run
                       <SortIcon field="lastProcessed" />
@@ -425,7 +553,7 @@ export default function RecurringCampaignsPage() {
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort('nextRun')}
+                      onClick={() => handleSort("nextRun")}
                     >
                       Next Run
                       <SortIcon field="nextRun" />
@@ -436,7 +564,7 @@ export default function RecurringCampaignsPage() {
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort('processedCount')}
+                      onClick={() => handleSort("processedCount")}
                     >
                       Executions
                       <SortIcon field="processedCount" />
@@ -447,13 +575,13 @@ export default function RecurringCampaignsPage() {
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort('status')}
+                      onClick={() => handleSort("status")}
                     >
                       Status
                       <SortIcon field="status" />
                     </Button>
                   </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-auto sm:w-[200px] text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -465,7 +593,10 @@ export default function RecurringCampaignsPage() {
                   </TableRow>
                 ) : campaignsWithNextRun.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No recurring campaigns found
                     </TableCell>
                   </TableRow>
@@ -477,7 +608,9 @@ export default function RecurringCampaignsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{campaign.campaignName}</span>
+                          <span className="font-medium">
+                            {campaign.campaignName}
+                          </span>
                           {campaign.description && (
                             <TooltipProvider>
                               <Tooltip>
@@ -498,17 +631,21 @@ export default function RecurringCampaignsPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Repeat className="h-4 w-4 text-muted-foreground" />
-                          <span>{formatRecurringPeriod(campaign.recurringPeriod)}</span>
+                          <span>
+                            {formatRecurringPeriod(campaign.recurringPeriod)}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>
                         {campaign.lastProcessed ? (
                           <div>
                             <div className="text-sm">
-                              {dayjs(campaign.lastProcessed).format('MMM D, YYYY')}
+                              {dayjs(campaign.lastProcessed).format(
+                                "MMM D, YYYY",
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {dayjs(campaign.lastProcessed).format('h:mm A')}
+                              {dayjs(campaign.lastProcessed).format("h:mm A")}
                             </div>
                           </div>
                         ) : (
@@ -519,10 +656,10 @@ export default function RecurringCampaignsPage() {
                         {campaign.nextRun ? (
                           <div>
                             <div className="text-sm font-medium">
-                              {dayjs(campaign.nextRun).format('MMM D, YYYY')}
+                              {dayjs(campaign.nextRun).format("MMM D, YYYY")}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {dayjs(campaign.nextRun).format('h:mm A')}
+                              {dayjs(campaign.nextRun).format("h:mm A")}
                             </div>
                             <div className="text-xs text-primary mt-1">
                               {dayjs(campaign.nextRun).fromNow()}
@@ -533,90 +670,153 @@ export default function RecurringCampaignsPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline">{campaign.processedCount || 0}</Badge>
+                        <Badge variant="outline">
+                          {campaign.processedCount || 0}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant={getStatusBadgeVariant(campaign.status)}>
                           {campaign.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() =>
-                                    navigate(paths.dashboard.campaign.details(campaign._id))
-                                  }
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>View Details</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() =>
-                                    navigate(paths.dashboard.campaign.edit(campaign._id))
-                                  }
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Edit Campaign</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          {campaign.status === 'ACTIVE' ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handlePlayPause(campaign, 'PAUSED')}
-                                    disabled={updatingCampaignId === campaign._id}
-                                  >
-                                    {updatingCampaignId === campaign._id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Pause className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Pause Campaign</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ) : (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handlePlayPause(campaign, 'ACTIVE')}
-                                    disabled={updatingCampaignId === campaign._id}
-                                  >
-                                    {updatingCampaignId === campaign._id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Play className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Resume Campaign</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          {campaign.status !== "ARCHIVED" && (
+                            <>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => {
+                                        if (campaign.status === "PAUSED" || campaign.status === "DRAFT") {
+                                          handlePlayPause(campaign, "ACTIVE");
+                                        } else if (campaign.status === "ACTIVE") {
+                                          handlePlayPause(campaign, "PAUSED");
+                                        }
+                                      }}
+                                      disabled={updatingCampaignId === campaign._id}
+                                    >
+                                      {updatingCampaignId === campaign._id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : campaign.status === "ACTIVE" ? (
+                                        <Pause className="h-4 w-4" />
+                                      ) : (
+                                        <Play className="h-4 w-4 text-green-600" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {campaign.status === "ACTIVE" ? "Pause" : "Start"} Campaign
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => navigate(paths.dashboard.campaign.edit(campaign._id))}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Edit Campaign</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() =>
+                                        navigate(paths.dashboard.logs.detail, {
+                                          state: {
+                                            campaignId: campaign._id,
+                                            campaignName: campaign.emailSubject,
+                                          },
+                                        })
+                                      }
+                                    >
+                                      <BarChart3 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>View Campaign Logs</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => handleCheckSegmentCount(campaign)}
+                                      disabled={segmentCountLoadingId === campaign._id}
+                                    >
+                                      {segmentCountLoadingId === campaign._id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Users className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Check Segment Count</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </>
                           )}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() =>
+                                    handleOpenArchiveDialog(
+                                      campaign,
+                                      campaign.status === "ARCHIVED" ? "unarchive" : "archive",
+                                    )
+                                  }
+                                  disabled={archivingCampaignId === campaign._id}
+                                >
+                                  {archivingCampaignId === campaign._id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : campaign.status === "ARCHIVED" ? (
+                                    <ArchiveRestore className="h-4 w-4" />
+                                  ) : (
+                                    <Archive className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {campaign.status === "ARCHIVED" ? "Unarchive" : "Archive"} Campaign
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => handleOpenDeleteDialog(campaign)}
+                                  disabled={isDeleting}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete Campaign</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -630,8 +830,9 @@ export default function RecurringCampaignsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">
-                Showing {Math.min((page - 1) * pageSize + 1, totalCount)} to{' '}
-                {Math.min(page * pageSize, totalCount)} of {totalCount} campaigns
+                Showing {Math.min((page - 1) * pageSize + 1, totalCount)} to{" "}
+                {Math.min(page * pageSize, totalCount)} of {totalCount}{" "}
+                campaigns
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -667,8 +868,8 @@ export default function RecurringCampaignsPage() {
           <DialogHeader>
             <DialogTitle>Pause Recurring Campaign</DialogTitle>
             <DialogDescription>
-              Are you sure you want to pause "{selectedCampaign?.campaignName}"? The campaign will
-              stop running on its schedule until you resume it.
+              Are you sure you want to pause &quot;{selectedCampaign?.campaignName}&quot;?
+              The campaign will stop running on its schedule until you resume it.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -677,17 +878,136 @@ export default function RecurringCampaignsPage() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => selectedCampaign && updateCampaignStatus(selectedCampaign, 'PAUSED')}
+              onClick={() =>
+                selectedCampaign &&
+                updateCampaignStatus(selectedCampaign, "PAUSED")
+              }
             >
               Pause Campaign
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Archive Confirmation Dialog */}
+      <Dialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {archiveAction === "archive" ? "Archive Campaign" : "Unarchive Campaign"}
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to {archiveAction} this campaign?
+              {campaignToArchive && (
+                <strong className="block mt-2">{campaignToArchive.campaignName}</strong>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setArchiveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleArchiveConfirm} disabled={archivingCampaignId !== null}>
+              {archivingCampaignId ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                archiveAction === "archive" ? "Archive" : "Unarchive"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Campaign Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="rounded-full bg-destructive/10 p-2">
+                <Trash2 className="h-5 w-5 text-destructive" />
+              </div>
+              Delete Campaign
+            </DialogTitle>
+            <DialogDescription className="pt-4">
+              Are you sure you want to delete this campaign? This action cannot be undone.
+              {campaignToDelete && (
+                <span className="mt-2 p-3 bg-muted rounded-md block">
+                  <span className="font-medium text-sm">{campaignToDelete.campaignName || campaignToDelete.emailSubject}</span>
+                  {campaignToDelete.campaignCompanyId && (
+                    <span className="text-xs text-muted-foreground mt-1 block">ID: {campaignToDelete.campaignCompanyId}</span>
+                  )}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isDeleting}>
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Segment Count Dialog */}
+      <Dialog open={segmentCountDialogOpen} onOpenChange={setSegmentCountDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Audience Count</DialogTitle>
+            <DialogDescription>
+              Total contacts who will receive this campaign
+            </DialogDescription>
+          </DialogHeader>
+          {segmentCountResult ? (
+            <div className="space-y-4">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Segment Name</TableHead>
+                      <TableHead className="text-center">Total Recipients</TableHead>
+                      <TableHead className="text-center">Invalid Emails</TableHead>
+                      <TableHead className="text-center">Unsubscribed</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {segmentCountResult.segments?.map((seg: any, index: number) => (
+                      <TableRow key={seg.segmentId || index}>
+                        <TableCell>{seg.segmentName}</TableCell>
+                        <TableCell className="text-center">{seg.contactCount}</TableCell>
+                        <TableCell className="text-center">{seg.invalidEmails || 0}</TableCell>
+                        <TableCell className="text-center">{seg.unsubscribed || 0}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setSegmentCountDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-}
-
-function cn(...classes: (string | undefined | null | false)[]): string {
-  return classes.filter(Boolean).join(' ');
 }

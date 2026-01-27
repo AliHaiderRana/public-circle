@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { RefreshCw, Eye, Copy, Search, ArrowLeft, Loader2, Image as ImageIcon } from 'lucide-react';
+import { RefreshCw, Eye, Copy, Search, ArrowLeft, Loader2, Image as ImageIcon, Monitor, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getAllSampleTemplates, getAllCategories, getTemplateById } from '@/actions/templates';
 import { mutate } from 'swr';
@@ -15,7 +14,24 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { convertHtmlToJson } from '@/lib/html-to-json';
 import { getFilterKeys } from '@/actions/filters';
-import { TemplatePreviewDrawer } from '@/components/template-editor/TemplatePreviewDrawer';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DOMPurify from 'dompurify';
+import { getAllUsers } from '@/actions/users';
+import { cn } from '@/lib/utils';
 
 export default function SampleTemplatesPage() {
   const navigate = useNavigate();
@@ -30,7 +46,93 @@ export default function SampleTemplatesPage() {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string>('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch users for preview
+  const { allUsers, isLoading: usersLoading } = getAllUsers(1, 100);
+  const { filterKeysData } = getFilterKeys();
+
+  const users = useMemo(() => {
+    return Array.isArray(allUsers) ? allUsers : [];
+  }, [allUsers]);
+
+  const filterKeys = useMemo(() => {
+    return filterKeysData?.data || [];
+  }, [filterKeysData]);
+
+  // Auto-select first user when users are loaded
+  useEffect(() => {
+    if (users.length > 0 && !selectedUser && previewOpen) {
+      setSelectedUser(users[0]);
+    }
+  }, [users, selectedUser, previewOpen]);
+
+  // Fetch template HTML when preview opens
+  useEffect(() => {
+    if (previewOpen && previewTemplateId) {
+      setPreviewLoading(true);
+      getTemplateById(previewTemplateId)
+        .then((response) => {
+          const template = response?.data?.data || response?.data;
+          if (template) {
+            const html = template.body || template.html || template.content || '';
+            setPreviewHtml(html);
+          } else {
+            setPreviewHtml('');
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching template:', error);
+          setPreviewHtml('');
+        })
+        .finally(() => {
+          setPreviewLoading(false);
+        });
+    } else {
+      setPreviewHtml('');
+    }
+  }, [previewOpen, previewTemplateId]);
+
+  // Process template with user data
+  const processTemplateWithUserData = (html: string): string => {
+    if (!html || !selectedUser || !filterKeys?.length) return html;
+
+    const userFields: Record<string, string> = {};
+    filterKeys.forEach((key: string) => {
+      userFields[key] = selectedUser[key] || '';
+    });
+
+    return Object.keys(userFields).reduce((processedHtml, key) => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      return processedHtml.replace(regex, userFields[key]);
+    }, html);
+  };
+
+  const processedPreviewHtml = useMemo(() => {
+    return processTemplateWithUserData(previewHtml);
+  }, [previewHtml, selectedUser, filterKeys]);
+
+  const getUserDisplayLabel = (user: any): string => {
+    const firstName = user.firstName || user.first_name || user['First Name'] || '';
+    const lastName = user.lastName || user.last_name || user['Last Name'] || '';
+
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (lastName) {
+      return lastName;
+    } else if (user.email) {
+      return user.email;
+    } else if (user._id) {
+      return user._id;
+    }
+    return 'Unknown User';
+  };
 
   // Debounce search term
   useEffect(() => {
@@ -135,9 +237,9 @@ export default function SampleTemplatesPage() {
                 ))}
               </div>
             ) : allCategories && allCategories.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {allCategories.map((category: any) => (
-                  <div key={category._id} className="flex items-center space-x-2">
+                  <div key={category._id} className="flex items-center space-x-3">
                     <Checkbox
                       id={`category-${category._id}`}
                       checked={selectedCategories.includes(category._id)}
@@ -282,12 +384,154 @@ export default function SampleTemplatesPage() {
         </div>
       </div>
 
-      {/* Preview Drawer */}
-      <TemplatePreviewDrawer
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-        templateId={previewTemplateId || undefined}
-      />
+      {/* Preview Modal */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <DialogTitle>Template Preview</DialogTitle>
+                <DialogDescription>
+                  Preview how your template will look to recipients
+                </DialogDescription>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* Sample User Selection */}
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="sample-user" className="text-sm whitespace-nowrap">
+                    Sample user:
+                  </Label>
+                  <Select
+                    value={selectedUser?._id || ''}
+                    onValueChange={(value) => {
+                      const user = users.find((u: any) => u._id === value);
+                      setSelectedUser(user || null);
+                    }}
+                    disabled={usersLoading || users.length === 0}
+                  >
+                    <SelectTrigger id="sample-user" className="w-[180px]">
+                      <SelectValue placeholder="Select user">
+                        {usersLoading ? 'Loading...' : selectedUser ? getUserDisplayLabel(selectedUser) : 'Select user'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usersLoading ? (
+                        <SelectItem value="__loading__" disabled>
+                          Loading users...
+                        </SelectItem>
+                      ) : users.length === 0 ? (
+                        <SelectItem value="__no_users__" disabled>
+                          No users found
+                        </SelectItem>
+                      ) : (
+                        users.map((user: any) => (
+                          <SelectItem key={user._id} value={user._id}>
+                            {getUserDisplayLabel(user)}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Device Toggle */}
+                <Tabs value={previewDevice} onValueChange={(v) => setPreviewDevice(v as 'desktop' | 'mobile')}>
+                  <TabsList>
+                    <TabsTrigger value="desktop" className="gap-2">
+                      <Monitor className="h-4 w-4" />
+                      <span className="hidden sm:inline">Desktop</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="mobile" className="gap-2">
+                      <Smartphone className="h-4 w-4" />
+                      <span className="hidden sm:inline">Mobile</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-auto bg-muted p-6">
+            {previewLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : !previewHtml ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="text-center">
+                  <p className="text-lg font-medium mb-2">No template content</p>
+                  <p className="text-sm">The template could not be loaded</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <style>{`
+                  .preview-mobile, .preview-mobile * {
+                    max-width: 100% !important;
+                    box-sizing: border-box !important;
+                  }
+                  .preview-mobile table {
+                    width: 100% !important;
+                    table-layout: fixed !important;
+                  }
+                  .preview-mobile img {
+                    max-width: 100% !important;
+                    height: auto !important;
+                    display: block !important;
+                  }
+                  .preview-mobile td {
+                    word-break: break-word !important;
+                    overflow-wrap: break-word !important;
+                  }
+                  .preview-mobile .footer-flex-responsive {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    width: 100% !important;
+                    gap: 8px !important;
+                    padding: 12px 10px !important;
+                  }
+                `}</style>
+                <div className="flex justify-center">
+                  {previewDevice === 'mobile' ? (
+                    <div
+                      className="bg-white shadow-lg preview-mobile border border-gray-300 rounded-lg overflow-hidden"
+                      style={{
+                        width: '375px',
+                        minWidth: '375px',
+                        maxWidth: '375px',
+                      }}
+                    >
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: DOMPurify.sanitize(processedPreviewHtml, {
+                            WHOLE_DOCUMENT: true,
+                            ADD_TAGS: ['style'],
+                            ADD_ATTR: ['style'],
+                          }),
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="bg-white shadow-lg w-full max-w-4xl">
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: DOMPurify.sanitize(processedPreviewHtml, {
+                            WHOLE_DOCUMENT: true,
+                            ADD_TAGS: ['style'],
+                            ADD_ATTR: ['style'],
+                          }),
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

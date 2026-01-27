@@ -1,14 +1,21 @@
-import { useState, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuthContext } from '@/auth/hooks/use-auth-context';
-import { updateUser } from '@/actions/signup';
-import { toast } from 'sonner';
-import { paths } from '@/routes/paths';
-import { Camera, Upload, X } from 'lucide-react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuthContext } from "@/auth/hooks/use-auth-context";
+import { updateUser } from "@/actions/signup";
+import { toast } from "sonner";
+import { Camera, Upload, X, Loader2 } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, checkUserSession } = useAuthContext();
@@ -18,24 +25,25 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userInitials = user
-    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase()
-    : 'U';
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
+    : "U";
 
-  const currentAvatarUrl = avatarPreview || user?.profilePicture || user?.photoURL;
+  const currentAvatarUrl =
+    avatarPreview || user?.profilePicture || user?.photoURL;
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
       return;
     }
 
     // Validate file size (3MB max)
     if (file.size > 3145728) {
-      toast.error('Image size must be less than 3MB');
+      toast.error("Image size must be less than 3MB");
       return;
     }
 
@@ -50,24 +58,24 @@ export default function ProfilePage() {
   const handleAvatarUpload = async () => {
     const file = fileInputRef.current?.files?.[0];
     if (!file) {
-      toast.error('Please select an image file');
+      toast.error("Please select an image file");
       return;
     }
 
     setIsUploadingAvatar(true);
     try {
       const formData = new FormData();
-      formData.append('profilePicture', file);
-      formData.append('firstName', user?.firstName || '');
-      formData.append('lastName', user?.lastName || '');
+      formData.append("profilePicture", file);
+      formData.append("firstName", user?.firstName || "");
+      formData.append("lastName", user?.lastName || "");
 
       const res = await updateUser(formData);
       if (res?.status === 200) {
-        toast.success('Profile picture updated successfully');
+        toast.success("Profile picture updated successfully");
         setAvatarPreview(null);
         await checkUserSession?.();
         if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+          fileInputRef.current.value = "";
         }
       }
     } catch (error: any) {
@@ -80,7 +88,7 @@ export default function ProfilePage() {
   const handleRemoveAvatar = () => {
     setAvatarPreview(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -90,14 +98,14 @@ export default function ProfilePage() {
     try {
       const formData = new FormData(e.currentTarget);
       await updateUser({
-        firstName: formData.get('firstName'),
-        lastName: formData.get('lastName'),
-        phoneNumber: formData.get('phoneNumber'),
+        firstName: formData.get("firstName"),
+        lastName: formData.get("lastName"),
+        phoneNumber: formData.get("phoneNumber"),
       });
       await checkUserSession?.();
-      toast.success('Profile updated successfully');
+      toast.success("Profile updated successfully");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update profile');
+      toast.error(error?.response?.data?.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
     }
@@ -107,7 +115,9 @@ export default function ProfilePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Profile Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your personal information</p>
+        <p className="text-muted-foreground mt-1">
+          Manage your personal information
+        </p>
       </div>
 
       <Card>
@@ -122,7 +132,9 @@ export default function ProfilePage() {
               <div className="relative">
                 <Avatar className="h-24 w-24">
                   <AvatarImage src={currentAvatarUrl || undefined} />
-                  <AvatarFallback className="text-xl">{userInitials}</AvatarFallback>
+                  <AvatarFallback className="text-xl">
+                    {userInitials}
+                  </AvatarFallback>
                 </Avatar>
                 <label
                   htmlFor="avatar-upload"
@@ -140,8 +152,12 @@ export default function ProfilePage() {
                 </label>
               </div>
               <div className="flex-1">
-                <p className="font-medium text-lg">{user?.firstName} {user?.lastName}</p>
-                <p className="text-sm text-muted-foreground">{user?.emailAddress}</p>
+                <p className="font-medium text-lg">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {user?.emailAddress}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Allowed: JPEG, JPG, PNG, GIF. Max size: 3MB
                 </p>
@@ -155,8 +171,12 @@ export default function ProfilePage() {
                   onClick={handleAvatarUpload}
                   disabled={isUploadingAvatar}
                 >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {isUploadingAvatar ? 'Uploading...' : 'Upload Picture'}
+                  {isUploadingAvatar ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4 mr-2" />
+                  )}
+                  {isUploadingAvatar ? "Uploading..." : "Upload Picture"}
                 </Button>
                 <Button
                   type="button"
@@ -179,7 +199,7 @@ export default function ProfilePage() {
                 <Input
                   id="firstName"
                   name="firstName"
-                  defaultValue={user?.firstName || ''}
+                  defaultValue={user?.firstName || ""}
                 />
               </div>
               <div className="space-y-2">
@@ -187,7 +207,7 @@ export default function ProfilePage() {
                 <Input
                   id="lastName"
                   name="lastName"
-                  defaultValue={user?.lastName || ''}
+                  defaultValue={user?.lastName || ""}
                 />
               </div>
             </div>
@@ -198,12 +218,13 @@ export default function ProfilePage() {
                 id="phoneNumber"
                 name="phoneNumber"
                 type="tel"
-                defaultValue={user?.phoneNumber || ''}
+                defaultValue={user?.phoneNumber || ""}
               />
             </div>
 
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </form>
         </CardContent>

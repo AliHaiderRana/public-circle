@@ -7,7 +7,6 @@ import type { NavItem } from './nav-data';
 import { useAuthContext } from '@/auth/hooks/use-auth-context';
 import { NavTour } from '@/components/tour/nav-tour';
 import { Logo } from '@/components/logo';
-import { CompanyLogo } from '@/components/company-logo';
 import { getSubscriptionStatus } from '@/actions/subscription';
 import { paths } from '@/routes/paths';
 import {
@@ -26,6 +25,7 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
   SidebarSeparator,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
@@ -109,7 +109,7 @@ function NavMenuItemComponent({ item, pathname, isSubscriptionCancelled }: NavMe
             >
               {item.icon}
               <span>{item.title}</span>
-              <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+              <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -165,6 +165,24 @@ function NavMenuItemComponent({ item, pathname, isSubscriptionCancelled }: NavMe
   );
 }
 
+// Sidebar Logo component that responds to collapse state
+function SidebarLogo() {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
+  return (
+    <SidebarHeader className="border-b border-sidebar-border">
+      <div className="flex h-12 items-center justify-center px-2">
+        {isCollapsed ? (
+          <Logo isSingle={true} width={32} height={32} disableLink={false} />
+        ) : (
+          <Logo isSingle={false} width={130} height={28} disableLink={false} />
+        )}
+      </div>
+    </SidebarHeader>
+  );
+}
+
 export function DashboardSidebar() {
   const location = useLocation();
   const pathname = location.pathname;
@@ -202,37 +220,7 @@ export function DashboardSidebar() {
   return (
     <Sidebar collapsible="icon">
       {/* Logo Section */}
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex h-12 items-center px-2">
-          <Logo isSingle={false} width={130} height={28} disableLink={false} />
-        </div>
-      </SidebarHeader>
-
-      {/* Company Workspace Section */}
-      {user?.company && (
-        <div className="border-b border-sidebar-border px-2 py-2">
-          <div className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-sidebar-accent">
-            <CompanyLogo
-              logo={user.company.logo}
-              name={user.company.name}
-              size="sm"
-              showName={false}
-              className="flex-shrink-0"
-            />
-            <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-              <div
-                className="text-xs font-semibold text-sidebar-foreground truncate leading-tight"
-                title={user.company.name}
-              >
-                {user.company.name}
-              </div>
-              <div className="text-[10px] text-sidebar-foreground/60 uppercase tracking-wider leading-tight mt-0.5">
-                Workspace
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <SidebarLogo />
 
       {/* Navigation */}
       <SidebarContent>

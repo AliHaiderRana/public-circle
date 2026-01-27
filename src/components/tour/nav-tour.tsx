@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Info } from 'lucide-react';
+import { Info, Flag } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSidebar } from '@/components/ui/sidebar';
 import { LoadingButton } from '@/components/ui/loading-button';
 import {
   Tooltip,
@@ -13,6 +14,19 @@ import { skipTour, completeTour } from '@/actions/users';
 import { useAuthContext } from '@/auth/hooks/use-auth-context';
 import type { TourStep } from '@/types/tour';
 import { toast } from 'sonner';
+import { paths } from '@/routes/paths';
+
+// ----------------------------------------------------------------------
+
+// Map incorrect backend links to correct frontend paths
+const LINK_CORRECTIONS: Record<string, string> = {
+  '/dashboard/configurations/contacts': paths.dashboard.contacts.import,
+  '/dashboard/configurations/contacts/import': paths.dashboard.contacts.import,
+};
+
+function getCorrectLink(link: string): string {
+  return LINK_CORRECTIONS[link] || link;
+}
 
 // ----------------------------------------------------------------------
 
@@ -28,6 +42,8 @@ export function NavTour({ steps, isCompletedTour }: NavTourProps) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { checkUserSession } = useAuthContext();
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
 
   // Memoize calculations for performance
   const { completedSteps, totalSteps, progressPercentage, allStepsCompleted } = useMemo(() => {
@@ -72,9 +88,29 @@ export function NavTour({ steps, isCompletedTour }: NavTourProps) {
 
   const handleStepClick = useCallback((step: TourStep) => {
     if (step.link) {
-      navigate(step.link);
+      const correctedLink = getCorrectLink(step.link);
+      navigate(correctedLink);
     }
   }, [navigate]);
+
+  if (isCollapsed) {
+    return (
+      <div className="flex flex-col items-center p-2">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center justify-center size-8 rounded-md cursor-default hover:bg-sidebar-accent transition-colors">
+                <Flag className="h-4 w-4 text-sidebar-foreground" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Get Started - {completedSteps}/{totalSteps} steps completed</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -84,9 +120,6 @@ export function NavTour({ steps, isCompletedTour }: NavTourProps) {
         scrollbarColor: 'hsl(var(--muted-foreground) / 0.3) transparent',
       }}
     >
-      {/* Divider */}
-      <div className="h-px bg-border mb-2" />
-
       {/* Title with Info Icon */}
       <div className="flex items-center gap-1 mb-4">
         <h3 className="text-sm font-semibold text-foreground">Get started</h3>

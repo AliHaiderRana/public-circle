@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -7,9 +9,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -17,22 +25,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { EmptyState } from '@/components/ui/empty-state';
-import { LoadingState } from '@/components/ui/loading-state';
-import { toast } from 'sonner';
-import { Plus, RefreshCw, Edit, Trash2, Copy, Users, Eye } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
+import { toast } from "sonner";
+import { Plus, RefreshCw, Edit, Trash2, Copy, Users } from "lucide-react";
 import {
   getPaginatedSegments,
   deleteSegment,
   duplicateSegment,
   getSegmentFilterCount,
-} from '@/actions/segments';
-import { paths } from '@/routes/paths';
-import type { Segment } from '@/types/segment';
-import { format } from 'date-fns';
-import { SegmentContactsDialog } from '@/components/segments/SegmentContactsDialog';
+} from "@/actions/segments";
+import { paths } from "@/routes/paths";
+import type { Segment } from "@/types/segment";
+import { format } from "date-fns";
+import { SegmentContactsDialog } from "@/components/segments/SegmentContactsDialog";
 
 export default function SegmentsPage() {
   const navigate = useNavigate();
@@ -45,12 +53,16 @@ export default function SegmentsPage() {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [segmentToDelete, setSegmentToDelete] = useState<Segment | null>(null);
   const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
-  const [segmentToDuplicate, setSegmentToDuplicate] = useState<Segment | null>(null);
+  const [segmentToDuplicate, setSegmentToDuplicate] = useState<Segment | null>(
+    null,
+  );
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [loadingSegmentId, setLoadingSegmentId] = useState<string | null>(null);
   const [segmentCountResult, setSegmentCountResult] = useState<any>(null);
   const [segmentCountDialogOpen, setSegmentCountDialogOpen] = useState(false);
-  const [openSegmentContactsFor, setOpenSegmentContactsFor] = useState<string | null>(null);
+  const [openSegmentContactsFor, setOpenSegmentContactsFor] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     fetchSegments();
@@ -60,7 +72,7 @@ export default function SegmentsPage() {
     try {
       setIsLoading(true);
       const res = await getPaginatedSegments(
-        `?pageNumber=${page + 1}&pageSize=${rowsPerPage}`
+        `?pageNumber=${page + 1}&pageSize=${rowsPerPage}`,
       );
 
       if (res?.status === 200) {
@@ -68,8 +80,8 @@ export default function SegmentsPage() {
         setTotalCount(res?.data?.data?.totalRecords || 0);
       }
     } catch (error) {
-      console.error('Error fetching segments:', error);
-      toast.error('Failed to fetch segments');
+      console.error("Error fetching segments:", error);
+      toast.error("Failed to fetch segments");
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +92,7 @@ export default function SegmentsPage() {
     try {
       await fetchSegments();
     } catch (error) {
-      console.error('Error refreshing segments:', error);
+      console.error("Error refreshing segments:", error);
     } finally {
       setTimeout(() => setIsRefreshing(false), 1000);
     }
@@ -92,11 +104,11 @@ export default function SegmentsPage() {
     try {
       const res = await deleteSegment(segmentToDelete._id);
       if (res?.status === 200) {
-        toast.success('Segment deleted successfully');
+        toast.success("Segment deleted successfully");
         fetchSegments();
       }
     } catch (error: any) {
-      toast.error(error?.message || 'Failed to delete segment');
+      toast.error(error?.message || "Failed to delete segment");
     }
     setOpenDeleteDialog(false);
     setSegmentToDelete(null);
@@ -109,11 +121,11 @@ export default function SegmentsPage() {
     try {
       const res = await duplicateSegment(segmentToDuplicate._id);
       if (res?.status === 200) {
-        toast.success('Segment duplicated successfully');
+        toast.success("Segment duplicated successfully");
         fetchSegments();
       }
     } catch (error: any) {
-      toast.error(error?.message || 'Failed to duplicate segment');
+      toast.error(error?.message || "Failed to duplicate segment");
     } finally {
       setIsDuplicating(false);
       setOpenDuplicateDialog(false);
@@ -130,7 +142,7 @@ export default function SegmentsPage() {
         setSegmentCountDialogOpen(true);
       }
     } catch (error) {
-      console.error('Error fetching segment count:', error);
+      console.error("Error fetching segment count:", error);
     } finally {
       setLoadingSegmentId(null);
     }
@@ -151,26 +163,33 @@ export default function SegmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Segments</h1>
           <p className="text-muted-foreground mt-1">
-            Organize your audience into segments based on shared characteristics, such as
-            interests and attributes. This enables personalized communication and higher
-            engagement.
+            Organize your audience into segments based on shared
+            characteristics, such as interests and attributes. This enables
+            personalized communication and higher engagement.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button
             variant="outline"
             size="icon"
             onClick={handleRefresh}
             disabled={isRefreshing}
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
           </Button>
           <Button
-            onClick={() => navigate(paths.dashboard.audience?.newSegment || '/dashboard/audience/segments/new')}
+            onClick={() =>
+              navigate(
+                paths.dashboard.audience?.newSegment ||
+                  "/dashboard/audience/segments/new",
+              )
+            }
           >
             <Plus className="mr-2 h-4 w-4" />
             Create Segment
@@ -183,8 +202,12 @@ export default function SegmentsPage() {
           title="No Segments found"
           description="Get started by creating your first segment"
           action={{
-            label: 'Create Segment',
-            onClick: () => navigate(paths.dashboard.audience?.newSegment || '/dashboard/audience/segments/new'),
+            label: "Create Segment",
+            onClick: () =>
+              navigate(
+                paths.dashboard.audience?.newSegment ||
+                  "/dashboard/audience/segments/new",
+              ),
           }}
         />
       ) : (
@@ -192,7 +215,8 @@ export default function SegmentsPage() {
           <CardHeader>
             <CardTitle>All Segments</CardTitle>
             <CardDescription>
-              Manage your audience segments. Total: {totalCount} segment{totalCount !== 1 ? 's' : ''}
+              Manage your audience segments. Total: {totalCount} segment
+              {totalCount !== 1 ? "s" : ""}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -203,22 +227,29 @@ export default function SegmentsPage() {
                     <TableHead>Name</TableHead>
                     <TableHead className="text-center">Fields Count</TableHead>
                     <TableHead className="text-center">Created At</TableHead>
-                    <TableHead className="text-center">Audience Count</TableHead>
-                    <TableHead className="text-center">Segment Contacts</TableHead>
+                    <TableHead className="text-center">
+                      Audience Count
+                    </TableHead>
+                    <TableHead className="text-center">
+                      Segment Contacts
+                    </TableHead>
                     <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {segments.map((segment) => (
                     <TableRow key={segment._id}>
-                      <TableCell className="font-medium">{segment.name}</TableCell>
+                      <TableCell className="font-medium">
+                        {segment.name}
+                      </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="secondary">
-                          {segment.filters?.length || 0} filter{(segment.filters?.length || 0) !== 1 ? 's' : ''}
+                          {segment.filters?.length || 0} filter
+                          {(segment.filters?.length || 0) !== 1 ? "s" : ""}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        {format(new Date(segment.createdAt), 'MMM dd, yyyy')}
+                        {format(new Date(segment.createdAt), "MMM dd, yyyy")}
                       </TableCell>
                       <TableCell className="text-center">
                         <Button
@@ -230,7 +261,7 @@ export default function SegmentsPage() {
                           {loadingSegmentId === segment._id ? (
                             <RefreshCw className="h-4 w-4 animate-spin" />
                           ) : (
-                            'Check Count'
+                            "Check Count"
                           )}
                         </Button>
                       </TableCell>
@@ -263,7 +294,7 @@ export default function SegmentsPage() {
                             size="icon"
                             onClick={() =>
                               navigate(
-                                `${paths.dashboard.audience?.newSegment || '/dashboard/audience/segments/new'}/${segment._id}`
+                                `${paths.dashboard.audience?.newSegment || "/dashboard/audience/segments/new"}/${segment._id}`,
                               )
                             }
                             title="Edit Segment"
@@ -293,8 +324,9 @@ export default function SegmentsPage() {
             {totalCount > rowsPerPage && (
               <div className="flex items-center justify-between mt-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {page * rowsPerPage + 1} to{' '}
-                  {Math.min((page + 1) * rowsPerPage, totalCount)} of {totalCount} segments
+                  Showing {page * rowsPerPage + 1} to{" "}
+                  {Math.min((page + 1) * rowsPerPage, totalCount)} of{" "}
+                  {totalCount} segments
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -334,7 +366,10 @@ export default function SegmentsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenDeleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setOpenDeleteDialog(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
@@ -362,14 +397,17 @@ export default function SegmentsPage() {
               Cancel
             </Button>
             <Button onClick={handleDuplicate} disabled={isDuplicating}>
-              {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+              {isDuplicating ? "Duplicating..." : "Duplicate"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Segment Count Dialog */}
-      <Dialog open={segmentCountDialogOpen} onOpenChange={setSegmentCountDialogOpen}>
+      <Dialog
+        open={segmentCountDialogOpen}
+        onOpenChange={setSegmentCountDialogOpen}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Audience Count</DialogTitle>
@@ -384,22 +422,32 @@ export default function SegmentsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Field Name</TableHead>
-                      <TableHead className="text-center">Total Receiving Email</TableHead>
-                      <TableHead className="text-center">Invalid Emails</TableHead>
-                      <TableHead className="text-center">Unsubscribed</TableHead>
+                      <TableHead className="text-center">
+                        Total Receiving Email
+                      </TableHead>
+                      <TableHead className="text-center">
+                        Invalid Emails
+                      </TableHead>
+                      <TableHead className="text-center">
+                        Unsubscribed
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {segmentCountResult
-                      ?.filter((seg: any) => seg?.filterKey !== 'segmentCount')
+                      ?.filter((seg: any) => seg?.filterKey !== "segmentCount")
                       .map((seg: any, index: number, filteredArray: any[]) => {
                         const isLastRow = index === filteredArray.length - 1;
                         return (
                           <>
                             <TableRow key={seg?.filterKey}>
                               <TableCell>{seg?.filterName}</TableCell>
-                              <TableCell className="text-center">{seg?.filterCount}</TableCell>
-                              <TableCell className="text-center">{seg?.invalidEmailCount}</TableCell>
+                              <TableCell className="text-center">
+                                {seg?.filterCount}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {seg?.invalidEmailCount}
+                              </TableCell>
                               <TableCell className="text-center">
                                 {seg?.unSubscribedUserCount}
                               </TableCell>
@@ -424,20 +472,25 @@ export default function SegmentsPage() {
                       </TableHead>
                       <TableHead className="text-center">
                         <span className="font-bold">
-                          {segmentCountResult?.find((seg: any) => seg.filterKey === 'segmentCount')
-                            ?.filterCount ?? segmentCountResult?.totalNumberOfContacts}
+                          {segmentCountResult?.find(
+                            (seg: any) => seg.filterKey === "segmentCount",
+                          )?.filterCount ??
+                            segmentCountResult?.totalNumberOfContacts}
                         </span>
                       </TableHead>
                       <TableHead className="text-center">
                         <span className="font-bold">
-                          {segmentCountResult?.find((seg: any) => seg.filterKey === 'segmentCount')
-                            ?.totalInvalidEmailCount ?? segmentCountResult?.totalInvalidEmailCount}
+                          {segmentCountResult?.find(
+                            (seg: any) => seg.filterKey === "segmentCount",
+                          )?.totalInvalidEmailCount ??
+                            segmentCountResult?.totalInvalidEmailCount}
                         </span>
                       </TableHead>
                       <TableHead className="text-center">
                         <span className="font-bold">
-                          {segmentCountResult?.find((seg: any) => seg.filterKey === 'segmentCount')
-                            ?.totalUnSubscribedCount ??
+                          {segmentCountResult?.find(
+                            (seg: any) => seg.filterKey === "segmentCount",
+                          )?.totalUnSubscribedCount ??
                             segmentCountResult?.totalUnSubscribedCount}
                         </span>
                       </TableHead>
@@ -446,13 +499,15 @@ export default function SegmentsPage() {
                 </Table>
               </div>
               <p className="text-sm text-muted-foreground">
-                Note: The total count is not the sum of all contacts because a single contact can
-                be a part of multiple fields.
+                Note: The total count is not the sum of all contacts because a
+                single contact can be a part of multiple fields.
               </p>
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => setSegmentCountDialogOpen(false)}>Close</Button>
+            <Button onClick={() => setSegmentCountDialogOpen(false)}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

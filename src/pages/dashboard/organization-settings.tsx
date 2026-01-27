@@ -1,16 +1,24 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -18,20 +26,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { useAuthContext } from '@/auth/hooks/use-auth-context';
+} from "@/components/ui/dialog";
+import { useAuthContext } from "@/auth/hooks/use-auth-context";
 import {
   updateUser,
   addOrUpdateCompanyLogo,
   deleteCompanyLogoApi,
   changeCompanyStatus,
-} from '@/actions/signup';
-import { signOut } from '@/auth/actions/auth';
-import { toast } from 'sonner';
-import { XCircle, Upload, Trash2 } from 'lucide-react';
-import { paths } from '@/routes/paths';
+} from "@/actions/signup";
+import { signOut } from "@/auth/actions/auth";
+import { toast } from "sonner";
+import { XCircle, Upload, Trash2, Loader2 } from "lucide-react";
 
-const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '500+'];
+const COMPANY_SIZES = ["1-10", "11-50", "51-200", "201-500", "500+"];
 
 export default function OrganizationSettingsPage() {
   const navigate = useNavigate();
@@ -41,7 +48,9 @@ export default function OrganizationSettingsPage() {
   const [isDeletingLogo, setIsDeletingLogo] = useState(false);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
   const [companyLogo, setCompanyLogo] = useState<File | null>(null);
-  const [companyLogoUrl, setCompanyLogoUrl] = useState(user?.company?.logo || '');
+  const [companyLogoUrl, setCompanyLogoUrl] = useState(
+    user?.company?.logo || "",
+  );
   const [openSuspendDialog, setOpenSuspendDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
@@ -51,18 +60,20 @@ export default function OrganizationSettingsPage() {
     try {
       const formData = new FormData(e.currentTarget);
       await updateUser({
-        companyName: formData.get('companyName'),
-        companySize: formData.get('companySize'),
-        country: formData.get('country'),
-        province: formData.get('state'),
-        city: formData.get('city'),
-        address: formData.get('address'),
-        postalCode: formData.get('postalCode'),
+        companyName: formData.get("companyName"),
+        companySize: formData.get("companySize"),
+        country: formData.get("country"),
+        province: formData.get("state"),
+        city: formData.get("city"),
+        address: formData.get("address"),
+        postalCode: formData.get("postalCode"),
       });
       await checkUserSession?.();
-      toast.success('Organization settings updated successfully');
+      toast.success("Organization settings updated successfully");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update settings');
+      toast.error(
+        error?.response?.data?.message || "Failed to update settings",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -70,18 +81,20 @@ export default function OrganizationSettingsPage() {
 
   const handleLogoUpload = async () => {
     if (!companyLogo) {
-      toast.error('Please select a logo file');
+      toast.error("Please select a logo file");
       return;
     }
 
     setIsLogoSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append('companyLogo', companyLogo);
+      formData.append("companyLogo", companyLogo);
       const result = await addOrUpdateCompanyLogo(formData);
       if (result?.status === 200 || result?.data) {
-        toast.success('Company logo uploaded successfully');
-        setCompanyLogoUrl(result?.data?.data?.companyLogo || result?.data?.companyLogo || '');
+        toast.success("Company logo uploaded successfully");
+        setCompanyLogoUrl(
+          result?.data?.data?.companyLogo || result?.data?.companyLogo || "",
+        );
         setCompanyLogo(null);
         await checkUserSession?.();
       }
@@ -97,8 +110,8 @@ export default function OrganizationSettingsPage() {
     try {
       const result = await deleteCompanyLogoApi();
       if (result?.status === 200 || result?.data) {
-        toast.success('Company logo deleted successfully');
-        setCompanyLogoUrl('');
+        toast.success("Company logo deleted successfully");
+        setCompanyLogoUrl("");
         setCompanyLogo(null);
         await checkUserSession?.();
       }
@@ -112,13 +125,13 @@ export default function OrganizationSettingsPage() {
   const handleSuspendAccount = async () => {
     setIsChangingStatus(true);
     try {
-      const result = await changeCompanyStatus({ status: 'SUSPENDED' });
+      const result = await changeCompanyStatus({ status: "SUSPENDED" });
       if (result?.status === 200 || result?.data) {
-        toast.success('Account suspended successfully');
+        toast.success("Account suspended successfully");
         setOpenSuspendDialog(false);
         setTimeout(async () => {
           await signOut();
-          navigate('/auth/jwt/sign-in');
+          navigate("/auth/jwt/sign-in");
         }, 1000);
       }
     } catch (error: any) {
@@ -131,13 +144,13 @@ export default function OrganizationSettingsPage() {
   const handleDeleteAccount = async () => {
     setIsChangingStatus(true);
     try {
-      const result = await changeCompanyStatus({ status: 'DELETED' });
+      const result = await changeCompanyStatus({ status: "DELETED" });
       if (result?.status === 200 || result?.data) {
-        toast.success('Account deleted successfully');
+        toast.success("Account deleted successfully");
         setOpenDeleteDialog(false);
         setTimeout(async () => {
           await signOut();
-          navigate('/auth/jwt/sign-in');
+          navigate("/auth/jwt/sign-in");
         }, 1000);
       }
     } catch (error: any) {
@@ -151,7 +164,9 @@ export default function OrganizationSettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Organization Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your organization settings and information</p>
+        <p className="text-muted-foreground mt-1">
+          Manage your organization settings and information
+        </p>
       </div>
 
       {/* Basic Information */}
@@ -168,13 +183,16 @@ export default function OrganizationSettingsPage() {
                 <Input
                   id="companyName"
                   name="companyName"
-                  defaultValue={user?.company?.name || ''}
+                  defaultValue={user?.company?.name || ""}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="companySize">Company Size</Label>
-                <Select name="companySize" defaultValue={user?.company?.companySize || ''}>
+                <Select
+                  name="companySize"
+                  defaultValue={user?.company?.companySize || ""}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select company size" />
                   </SelectTrigger>
@@ -192,7 +210,7 @@ export default function OrganizationSettingsPage() {
                 <Input
                   id="country"
                   name="country"
-                  defaultValue={user?.company?.country || ''}
+                  defaultValue={user?.company?.country || ""}
                   placeholder="Enter country"
                 />
               </div>
@@ -201,7 +219,7 @@ export default function OrganizationSettingsPage() {
                 <Input
                   id="state"
                   name="state"
-                  defaultValue={user?.company?.province || ''}
+                  defaultValue={user?.company?.province || ""}
                   placeholder="Enter state or province"
                 />
               </div>
@@ -210,7 +228,7 @@ export default function OrganizationSettingsPage() {
                 <Input
                   id="city"
                   name="city"
-                  defaultValue={user?.company?.city || ''}
+                  defaultValue={user?.company?.city || ""}
                   placeholder="Enter city"
                 />
               </div>
@@ -219,7 +237,7 @@ export default function OrganizationSettingsPage() {
                 <Input
                   id="postalCode"
                   name="postalCode"
-                  defaultValue={user?.company?.postalCode || ''}
+                  defaultValue={user?.company?.postalCode || ""}
                   placeholder="Enter postal code"
                 />
               </div>
@@ -229,13 +247,14 @@ export default function OrganizationSettingsPage() {
               <Input
                 id="address"
                 name="address"
-                defaultValue={user?.company?.address || ''}
+                defaultValue={user?.company?.address || ""}
                 placeholder="Street address or post office box"
               />
             </div>
 
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </form>
         </CardContent>
@@ -296,16 +315,28 @@ export default function OrganizationSettingsPage() {
                 onClick={handleDeleteLogo}
                 disabled={isDeletingLogo}
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {isDeletingLogo ? 'Deleting...' : 'Delete Logo'}
+                {isDeletingLogo ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                {isDeletingLogo ? "Deleting..." : "Delete Logo"}
               </Button>
             )}
             <Button
               onClick={handleLogoUpload}
               disabled={!companyLogo || isLogoSubmitting}
             >
-              <Upload className="h-4 w-4 mr-2" />
-              {isLogoSubmitting ? 'Uploading...' : companyLogoUrl ? 'Update Logo' : 'Upload Logo'}
+              {isLogoSubmitting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
+              {isLogoSubmitting
+                ? "Uploading..."
+                : companyLogoUrl
+                  ? "Update Logo"
+                  : "Upload Logo"}
             </Button>
           </div>
         </CardContent>
@@ -316,7 +347,8 @@ export default function OrganizationSettingsPage() {
         <CardHeader>
           <CardTitle>Account Actions</CardTitle>
           <CardDescription>
-            Suspending your account will temporarily deactivate it. Deleting your account will permanently remove all data.
+            Suspending your account will temporarily deactivate it. Deleting
+            your account will permanently remove all data.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -344,7 +376,8 @@ export default function OrganizationSettingsPage() {
           <DialogHeader>
             <DialogTitle>Confirm Suspension</DialogTitle>
             <DialogDescription>
-              Are you sure you want to suspend your account? You can reactivate it later.
+              Are you sure you want to suspend your account? You can reactivate
+              it later.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -360,7 +393,10 @@ export default function OrganizationSettingsPage() {
               onClick={handleSuspendAccount}
               disabled={isChangingStatus}
             >
-              {isChangingStatus ? 'Suspending...' : 'Suspend Account'}
+              {isChangingStatus && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              {isChangingStatus ? "Suspending..." : "Suspend Account"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -372,7 +408,8 @@ export default function OrganizationSettingsPage() {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete your account? This action cannot be undone and all data will be permanently removed.
+              Are you sure you want to delete your account? This action cannot
+              be undone and all data will be permanently removed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -388,7 +425,10 @@ export default function OrganizationSettingsPage() {
               onClick={handleDeleteAccount}
               disabled={isChangingStatus}
             >
-              {isChangingStatus ? 'Deleting...' : 'Delete Account'}
+              {isChangingStatus && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              {isChangingStatus ? "Deleting..." : "Delete Account"}
             </Button>
           </DialogFooter>
         </DialogContent>

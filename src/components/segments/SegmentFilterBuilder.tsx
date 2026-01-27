@@ -1,5 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -11,8 +13,19 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import type { Filter, SegmentFilter } from '@/types/segment';
-import { getAllFilters } from '@/actions/filters';
 import { getUserCount } from '@/actions/segments';
+
+// Map filter type values to display names
+const FILTER_TYPE_LABELS: Record<string, string> = {
+  INPUT: 'Input',
+  RADIO: 'Radio Buttons',
+  DROP_DOWN: 'DropDown',
+  CHECK_BOX: 'Check Boxes',
+};
+
+const getFilterTypeLabel = (filterType: string): string => {
+  return FILTER_TYPE_LABELS[filterType] || filterType;
+};
 import { FilterValueSelector } from './FilterValueSelector';
 import { ConditionBuilder } from './ConditionBuilder';
 
@@ -26,6 +39,16 @@ interface SegmentFilterBuilderProps {
   setTotalCount: (count: number) => void;
 }
 
+interface SelectAllState {
+  isSelectAll: boolean;
+  isSelectAllVisible: boolean;
+  totalCount: number;
+  visibleCount: number;
+  selectedCount: number;
+  handleSelectAll: (checked: boolean) => void;
+  handleSelectAllVisible: (checked: boolean) => void;
+}
+
 export function SegmentFilterBuilder({
   allFilters,
   selectedFields,
@@ -37,6 +60,7 @@ export function SegmentFilterBuilder({
 }: SegmentFilterBuilderProps) {
   const [fieldToAdd, setFieldToAdd] = useState<string>('');
   const [loadingFieldCount, setLoadingFieldCount] = useState<Record<string, boolean>>({});
+  const [selectAllStates, setSelectAllStates] = useState<Record<string, SelectAllState>>({});
 
   const availableFields = useMemo(() => {
     const selectedIds = new Set(selectedFields.map((f) => f._id));
@@ -127,7 +151,7 @@ export function SegmentFilterBuilder({
           <SelectContent>
             {availableFields.map((field) => (
               <SelectItem key={field._id} value={field._id}>
-                {field.filterLabel} ({field.filterType})
+                {field.filterLabel}
               </SelectItem>
             ))}
           </SelectContent>
@@ -146,19 +170,61 @@ export function SegmentFilterBuilder({
               key={field._id}
               className="rounded-lg border p-4 space-y-4 bg-card"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold">{field.filterLabel}</h3>
-                  <Badge variant="secondary">{field.filterType}</Badge>
+                  <Badge variant="secondary">{getFilterTypeLabel(field.filterType)}</Badge>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveField(field._id)}
-                >
-                  Remove
-                </Button>
+                <div className="flex items-center gap-4">
+                  {/* Select All Options for CHECK_BOX type */}
+                  {field.filterType === 'CHECK_BOX' && selectAllStates[field._id] && (
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`header-select-all-${field._id}`}
+                          checked={selectAllStates[field._id].isSelectAll}
+                          onCheckedChange={(checked) =>
+                            selectAllStates[field._id].handleSelectAll(checked as boolean)
+                          }
+                        />
+                        <Label
+                          htmlFor={`header-select-all-${field._id}`}
+                          className="cursor-pointer text-sm"
+                        >
+                          Select All ({selectAllStates[field._id].totalCount})
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`header-select-visible-${field._id}`}
+                          checked={selectAllStates[field._id].isSelectAllVisible}
+                          onCheckedChange={(checked) =>
+                            selectAllStates[field._id].handleSelectAllVisible(checked as boolean)
+                          }
+                        />
+                        <Label
+                          htmlFor={`header-select-visible-${field._id}`}
+                          className="cursor-pointer text-sm"
+                        >
+                          Select Visible ({selectAllStates[field._id].visibleCount})
+                        </Label>
+                      </div>
+                      {selectAllStates[field._id].selectedCount > 0 && (
+                        <span className="text-sm text-muted-foreground">
+                          {selectAllStates[field._id].selectedCount} selected
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveField(field._id)}
+                  >
+                    Remove
+                  </Button>
+                </div>
               </div>
 
               {field.filterType === 'INPUT' ? (
@@ -176,6 +242,10 @@ export function SegmentFilterBuilder({
                   onApply={(values) => handleApplyFilter(field, values, [], 'AND')}
                   isLoading={loadingFieldCount[field._id] || false}
                   existingGroup={selectedGroups.find((g) => g.fieldId === field._id)}
+                  renderSelectAllInHeader={field.filterType === 'CHECK_BOX'}
+                  onSelectAllStateChange={(state) =>
+                    setSelectAllStates((prev) => ({ ...prev, [field._id]: state }))
+                  }
                 />
               )}
             </div>
