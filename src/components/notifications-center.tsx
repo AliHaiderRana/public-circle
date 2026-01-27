@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
@@ -8,23 +9,22 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Bell, Check, CheckCheck, Trash2, X, Loader2 } from 'lucide-react';
+} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Bell, Check, CheckCheck, Trash2, Loader2 } from "lucide-react";
 import {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
   deleteNotification,
-} from '@/actions/notifications';
-import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
-import { paths } from '@/routes/paths';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+} from "@/actions/notifications";
+import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { paths } from "@/routes/paths";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface Notification {
   _id: string;
@@ -50,7 +50,7 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
+  const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -89,14 +89,14 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
           setHasMore(items.length === pageSize);
         }
       } catch (error) {
-        console.error('Error fetching notifications:', error);
-        toast.error('Failed to load notifications');
+        console.error("Error fetching notifications:", error);
+        toast.error("Failed to load notifications");
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
       }
     },
-    []
+    [],
   );
 
   // Initial load and refresh
@@ -144,8 +144,8 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
       }
     };
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [isOpen]);
 
   // Infinite scroll
@@ -160,7 +160,7 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
           fetchNotifications(nextPage, true);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     observerRef.current.observe(loadMoreRef.current);
@@ -176,12 +176,14 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
     try {
       await markNotificationAsRead(notificationId);
       setNotifications((prev) =>
-        prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n))
+        prev.map((n) =>
+          n._id === notificationId ? { ...n, isRead: true } : n,
+        ),
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Error marking notification as read:', error);
-      toast.error('Failed to mark notification as read');
+      console.error("Error marking notification as read:", error);
+      toast.error("Failed to mark notification as read");
     }
   };
 
@@ -190,10 +192,10 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
       await markAllNotificationsAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      toast.success('All notifications marked as read');
+      toast.success("All notifications marked as read");
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-      toast.error('Failed to mark all notifications as read');
+      console.error("Error marking all notifications as read:", error);
+      toast.error("Failed to mark all notifications as read");
     }
   };
 
@@ -201,10 +203,10 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
     try {
       await deleteNotification(notificationId);
       setNotifications((prev) => prev.filter((n) => n._id !== notificationId));
-      toast.success('Notification deleted');
+      toast.success("Notification deleted");
     } catch (error) {
-      console.error('Error deleting notification:', error);
-      toast.error('Failed to delete notification');
+      console.error("Error deleting notification:", error);
+      toast.error("Failed to delete notification");
     }
   };
 
@@ -215,11 +217,16 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
 
     // Navigate based on notification type
     if (notification.metadata?.campaignId) {
-      navigate(paths.dashboard.campaign.details.replace(':id', notification.metadata.campaignId));
-    } else if (notification.type === 'SES_STATUS') {
+      navigate(
+        paths.dashboard.campaign.details.replace(
+          ":id",
+          notification.metadata.campaignId,
+        ),
+      );
+    } else if (notification.type === "SES_STATUS") {
       // Navigate to email configuration or dashboard
       navigate(paths.dashboard.configurations.emailconfiguration);
-    } else if (notification.type === 'EMAIL_VERIFICATION') {
+    } else if (notification.type === "EMAIL_VERIFICATION") {
       navigate(paths.dashboard.configurations.emailconfiguration);
     }
 
@@ -230,12 +237,12 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
     try {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
     } catch {
-      return 'Recently';
+      return "Recently";
     }
   };
 
   const filteredNotifications =
-    activeTab === 'unread'
+    activeTab === "unread"
       ? notifications.filter((n) => !n.isRead)
       : notifications;
 
@@ -252,7 +259,7 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
                 variant="destructive"
                 className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
               >
-                {unreadCount > 99 ? '99+' : unreadCount}
+                {unreadCount > 99 ? "99+" : unreadCount}
               </Badge>
             )}
           </Button>
@@ -265,8 +272,8 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
               <SheetTitle>Notifications</SheetTitle>
               <SheetDescription>
                 {unreadCount > 0
-                  ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
-                  : 'All caught up!'}
+                  ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
+                  : "All caught up!"}
               </SheetDescription>
             </div>
             {unreadCount > 0 && (
@@ -283,7 +290,11 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
           </div>
         </SheetHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'unread')} className="mt-4">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as "all" | "unread")}
+          className="mt-4"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="all">
               All
@@ -319,14 +330,14 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Bell className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-sm font-medium text-muted-foreground">
-                    {activeTab === 'unread'
-                      ? 'No unread notifications'
-                      : 'No notifications yet'}
+                    {activeTab === "unread"
+                      ? "No unread notifications"
+                      : "No notifications yet"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {activeTab === 'unread'
+                    {activeTab === "unread"
                       ? "You're all caught up!"
-                      : 'Notifications will appear here'}
+                      : "Notifications will appear here"}
                   </p>
                 </div>
               ) : (
@@ -335,8 +346,9 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
                     <div
                       key={notification._id}
                       className={cn(
-                        'group relative p-4 rounded-lg border transition-colors cursor-pointer hover:bg-muted/50',
-                        !notification.isRead && 'bg-primary/5 border-primary/20'
+                        "group relative p-4 rounded-lg border transition-colors cursor-pointer hover:bg-muted/50",
+                        !notification.isRead &&
+                          "bg-primary/5 border-primary/20",
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >
@@ -349,8 +361,8 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
                             <div className="flex-1 min-w-0">
                               <p
                                 className={cn(
-                                  'text-sm font-medium',
-                                  !notification.isRead && 'font-semibold'
+                                  "text-sm font-medium",
+                                  !notification.isRead && "font-semibold",
                                 )}
                               >
                                 {notification.title}

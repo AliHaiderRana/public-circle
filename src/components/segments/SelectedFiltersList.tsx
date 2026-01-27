@@ -1,8 +1,14 @@
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 import type { SegmentFilter } from '@/types/segment';
 import { getUserCount } from '@/actions/segments';
 
@@ -36,22 +42,23 @@ export function SelectedFiltersList({
     }
   };
 
-  const formatFilterDisplay = (group: SegmentFilter) => {
+  const getFieldValuesDisplay = (group: SegmentFilter): string => {
     if (group.conditions && group.conditions.length > 0) {
-      return group.conditions
-        .map((cond) => {
-          if (['between', 'timestamp_between'].includes(cond.conditionType)) {
-            return `${cond.conditionType} ${cond.fromValue} - ${cond.toValue}`;
-          }
-          if (cond.duration) {
-            return `${cond.conditionType} ${cond.value} ${cond.duration}`;
-          }
-          return `${cond.conditionType} ${cond.value}`;
-        })
-        .join(` ${group.operator || 'AND'} `);
+      return `(${group.conditions.length} condition${group.conditions.length > 1 ? 's' : ''})`;
     }
-    return Array.isArray(group.values) ? group.values.join(', ') : String(group.values);
+    const values = Array.isArray(group.values) ? group.values : [group.values];
+    return `(${values.length} option${values.length !== 1 ? 's' : ''})`;
   };
+
+  // Calculate totals
+  const totals = selectedGroups.reduce(
+    (acc, group) => ({
+      count: acc.count + (group.count || 0),
+      invalidEmailCount: acc.invalidEmailCount + (group.invalidEmailCount || 0),
+      unSubscribedUserCount: acc.unSubscribedUserCount + (group.unSubscribedUserCount || 0),
+    }),
+    { count: 0, invalidEmailCount: 0, unSubscribedUserCount: 0 }
+  );
 
   if (selectedGroups.length === 0) {
     return (
@@ -63,40 +70,69 @@ export function SelectedFiltersList({
 
   return (
     <div className="space-y-3">
-      {selectedGroups.map((group) => (
-        <Card key={group.fieldId}>
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold">{group.name || group.key}</h4>
-                  <Badge variant="secondary">{group.type}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {formatFilterDisplay(group)}
-                </p>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>Count: {group.count || 0}</span>
-                  {group.invalidEmailCount !== undefined && (
-                    <span>Invalid: {group.invalidEmailCount}</span>
-                  )}
-                  {group.unSubscribedUserCount !== undefined && (
-                    <span>Unsubscribed: {group.unSubscribedUserCount}</span>
-                  )}
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleRemove(group.fieldId)}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+      <div className="rounded-lg border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Field Name</TableHead>
+              <TableHead>Field Values</TableHead>
+              <TableHead className="text-center">Total Who Will Be Receiving Email</TableHead>
+              <TableHead className="text-center">Invalid Users</TableHead>
+              <TableHead className="text-center">Unsubscribed Users</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {selectedGroups.map((group) => (
+              <TableRow key={group.fieldId}>
+                <TableCell className="font-medium">{group.name || group.key}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {getFieldValuesDisplay(group)}
+                </TableCell>
+                <TableCell className="text-center">
+                  {(group.count || 0).toLocaleString()}
+                </TableCell>
+                <TableCell className="text-center">
+                  {(group.invalidEmailCount || 0).toLocaleString()}
+                </TableCell>
+                <TableCell className="text-center">
+                  {(group.unSubscribedUserCount || 0).toLocaleString()}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemove(group.fieldId)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell className="font-semibold">Total</TableCell>
+              <TableCell></TableCell>
+              <TableCell className="text-center font-semibold">
+                {totals.count.toLocaleString()}
+              </TableCell>
+              <TableCell className="text-center font-semibold">
+                {totals.invalidEmailCount.toLocaleString()}
+              </TableCell>
+              <TableCell className="text-center font-semibold">
+                {totals.unSubscribedUserCount.toLocaleString()}
+              </TableCell>
+              <TableCell></TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        This count is approximate as a user can be included in multiple fields, which may reduce the actual count.
+      </p>
     </div>
   );
 }

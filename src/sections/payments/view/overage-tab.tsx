@@ -188,10 +188,10 @@ function BalanceTab({ onRefresh, isRefreshing }: BalanceTabProps) {
     <>
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Balance Card - Centered Design */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-slate-100 via-slate-50 to-white shadow-lg">
+        <Card className="relative overflow-hidden border shadow-lg">
           {/* Decorative circles */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-200/50 rounded-full -translate-y-16 translate-x-16" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-slate-200/50 rounded-full translate-y-12 -translate-x-12" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-muted/50 rounded-full -translate-y-16 translate-x-16" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-muted/50 rounded-full translate-y-12 -translate-x-12" />
 
           {/* Refresh button */}
           <Button
@@ -199,29 +199,29 @@ function BalanceTab({ onRefresh, isRefreshing }: BalanceTabProps) {
             size="icon"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="absolute top-3 right-3 h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 z-20"
+            className="absolute top-3 right-3 h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 z-20"
           >
             <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
           </Button>
 
           <CardContent className="p-6 sm:p-8 relative z-10 flex flex-col items-center justify-center text-center min-h-[200px]">
             {/* Icon */}
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center mb-4 shadow-lg">
-              <Wallet className="h-7 w-7 text-white" />
+            <div className="w-14 h-14 rounded-xl bg-sidebar-primary flex items-center justify-center mb-4 shadow-lg">
+              <Wallet className="h-7 w-7 text-sidebar-primary-foreground" />
             </div>
 
             {/* Label */}
-            <p className="text-slate-600 font-semibold text-base mb-4">Current Balance</p>
+            <p className="text-muted-foreground font-semibold text-base mb-4">Current Balance</p>
 
             {/* Balance Amount Box */}
-            <div className="w-full px-4 py-5 rounded-xl bg-gradient-to-r from-slate-700 via-slate-600 to-slate-500 shadow-lg">
-              <p className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+            <div className="w-full px-4 py-5 rounded-xl bg-sidebar-primary shadow-lg">
+              <p className="text-3xl sm:text-4xl font-bold text-sidebar-primary-foreground tracking-tight">
                 ${balanceAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
 
             {/* Description */}
-            <p className="text-slate-500 text-sm mt-4">Available for services</p>
+            <p className="text-muted-foreground text-sm mt-4">Available for services</p>
           </CardContent>
         </Card>
 
@@ -329,17 +329,17 @@ function BalanceTab({ onRefresh, isRefreshing }: BalanceTabProps) {
 
                 {/* Payment Method Preview */}
                 {paymentMethod?.card && (
-                  <Card className="bg-gradient-to-br from-slate-800 to-slate-900 text-white border-0">
+                  <Card className="bg-sidebar-primary text-sidebar-primary-foreground border-0">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-white/70">Payment Method</span>
-                        <CreditCard className="h-5 w-5 text-white/50" />
+                        <span className="text-sm text-sidebar-primary-foreground/70">Payment Method</span>
+                        <CreditCard className="h-5 w-5 text-sidebar-primary-foreground/50" />
                       </div>
                       <div className="space-y-1">
                         <p className="font-mono text-lg tracking-wider">
                           •••• •••• •••• {paymentMethod.card.last4}
                         </p>
-                        <div className="flex items-center justify-between text-sm text-white/70">
+                        <div className="flex items-center justify-between text-sm text-sidebar-primary-foreground/70">
                           <span>{user?.firstName} {user?.lastName}</span>
                           <span>{paymentMethod.card.exp_month}/{paymentMethod.card.exp_year}</span>
                         </div>
@@ -611,10 +611,10 @@ function ConsumptionTab({ onRefresh, isRefreshing }: ConsumptionTabProps) {
       {/* Test Emails Table */}
       {testEmailUsage && testEmailUsage.length > 0 && (
         <Card className="border-2">
-          <CardHeader className="bg-gradient-to-r from-amber-50 to-transparent">
+          <CardHeader className="bg-gradient-to-r from-muted to-transparent">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <PieChart className="h-5 w-5 text-amber-600" />
+                <PieChart className="h-5 w-5 text-primary" />
                 Test Email Usage
               </CardTitle>
               <Badge variant="outline">{testEmailUsage.length} records</Badge>

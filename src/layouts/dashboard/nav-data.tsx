@@ -1,13 +1,13 @@
 import React from "react";
 import {
-  LayoutDashboard,
+  BarChart3,
   Mail,
+  User,
   Users,
   FileText,
-  Settings,
-  FileClock,
+  SlidersHorizontal,
+  LayoutGrid,
   UserCog,
-  Shield,
   CreditCard,
   MapPin,
   Plus,
@@ -15,13 +15,13 @@ import {
   Repeat,
   Filter,
   UserPlus,
-  Edit,
   Contact,
   Globe,
   Webhook,
   UserCheck,
   FolderOpen,
   Sparkles,
+  Settings,
 } from "lucide-react";
 import { paths } from "@/routes/paths";
 
@@ -53,7 +53,7 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
       {
         title: "Dashboard",
         path: paths.dashboard.analytics,
-        icon: <LayoutDashboard className="h-5 w-5" />,
+        icon: <BarChart3 className="h-5 w-5" />,
       },
     ],
   },
@@ -83,19 +83,8 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
       },
       {
         title: "Campaign Logs",
-        icon: <FileClock className="h-5 w-5" />,
-        children: [
-          {
-            title: "Campaign Logs",
-            path: paths.dashboard.logs.list,
-            icon: <List className="h-4 w-4" />,
-          },
-          {
-            title: "Message Logs",
-            path: paths.dashboard.logs.messages,
-            icon: <Mail className="h-4 w-4" />,
-          },
-        ],
+        path: paths.dashboard.logs.list,
+        icon: <SlidersHorizontal className="h-5 w-5" />,
       },
     ],
   },
@@ -104,7 +93,7 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
     items: [
       {
         title: "Templates",
-        icon: <FileText className="h-5 w-5" />,
+        icon: <LayoutGrid className="h-5 w-5" />,
         children: [
           {
             title: "My Templates",
@@ -130,7 +119,7 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
     items: [
       {
         title: "Audience",
-        icon: <Users className="h-5 w-5" />,
+        icon: <User className="h-5 w-5" />,
         children: [
           {
             title: "Fields",
@@ -184,12 +173,6 @@ export const navData: { subheader: string; items: NavItem[] }[] = [
             path: paths.dashboard.configurations.webhooks,
             icon: <Webhook className="h-4 w-4" />,
           },
-          {
-            title: "Roles & Members",
-            path: paths.dashboard.configurations.roles,
-            icon: <Shield className="h-4 w-4" />,
-            roles: ["Admin"],
-          },
         ],
       },
     ],
@@ -214,7 +197,7 @@ export const accountMenuItems: AccountMenuItem[] = [
   {
     label: "Dashboard",
     href: paths.dashboard.analytics,
-    icon: <LayoutDashboard className="h-4 w-4" />,
+    icon: <BarChart3 className="h-4 w-4" />,
   },
   {
     label: "Profile Settings",
@@ -225,12 +208,6 @@ export const accountMenuItems: AccountMenuItem[] = [
     label: "Organizational Settings",
     href: paths.dashboard.general.organizationSettings,
     icon: <Settings className="h-4 w-4" />,
-    roles: ["Admin"],
-  },
-  {
-    label: "Roles & Members",
-    href: paths.dashboard.configurations.roles,
-    icon: <Shield className="h-4 w-4" />,
     roles: ["Admin"],
   },
   {

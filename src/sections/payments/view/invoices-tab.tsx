@@ -69,8 +69,12 @@ const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructiv
     case 'paid':
     case 'succeeded':
       return 'default';
+    case 'refund':
+    case 'refunded':
+      return 'destructive';
     case 'open':
     case 'pending':
+    case 'draft':
       return 'secondary';
     case 'failed':
     case 'void':
@@ -78,6 +82,45 @@ const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructiv
     default:
       return 'outline';
   }
+};
+
+// Helper to format status display text
+const formatStatusText = (status: string): string => {
+  if (!status) return 'Upcoming';
+  const statusLower = status.toLowerCase();
+  switch (statusLower) {
+    case 'paid':
+    case 'succeeded':
+      return 'Paid';
+    case 'refund':
+    case 'refunded':
+      return 'Refund';
+    case 'draft':
+      return 'Upcoming';
+    default:
+      return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+};
+
+// Helper to check if invoice is a refund/credit (unused time, negative amount, etc.)
+const isRefundInvoice = (invoice: any): boolean => {
+  const description = invoice.description?.toLowerCase() || '';
+  const amount = invoice.totalCost || invoice.amount_paid || invoice.total || 0;
+
+  // Check if description indicates a refund/credit
+  if (description.includes('unused time') ||
+      description.includes('refund') ||
+      description.includes('credit') ||
+      description.includes('remaining time')) {
+    return true;
+  }
+
+  // Check if amount is 0 or negative
+  if (amount <= 0) {
+    return true;
+  }
+
+  return false;
 };
 
 // Loading skeleton for tables
@@ -130,9 +173,9 @@ function PaidInvoicesTab() {
   return (
     <div className="space-y-4">
       {/* Info Banner */}
-      <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <Info className="h-5 w-5 text-amber-600 flex-shrink-0" />
-        <p className="text-sm text-amber-800">
+      <div className="flex items-center gap-3 p-4 bg-muted border border-border rounded-lg">
+        <Info className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+        <p className="text-sm text-muted-foreground">
           Please note that refunds may take 5-10 business days to appear in your account, depending on your bank's processing time.
         </p>
       </div>
@@ -170,7 +213,9 @@ function PaidInvoicesTab() {
               </TableBody>
             ) : (
               <TableBody>
-                {invoicesArray.map((invoice: any) => (
+                {invoicesArray.map((invoice: any) => {
+                  const isRefund = isRefundInvoice(invoice);
+                  return (
                   <TableRow key={invoice.id} className="hover:bg-muted/30">
                     <TableCell className="text-xs sm:text-sm">
                       <div className="flex flex-col">
@@ -196,13 +241,13 @@ function PaidInvoicesTab() {
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm">
                       <Badge
-                        variant={getStatusVariant(invoice.status)}
+                        variant={isRefund ? 'destructive' : getStatusVariant(invoice.status)}
                         className={cn(
-                          invoice.status === 'paid' && 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100',
-                          invoice.status === 'open' && 'bg-amber-100 text-amber-700 hover:bg-amber-100'
+                          !isRefund && (invoice.status?.toLowerCase() === 'paid' || invoice.status?.toLowerCase() === 'succeeded') && 'bg-success/10 text-success hover:bg-success/10',
+                          isRefund && 'bg-destructive/10 text-destructive hover:bg-destructive/10'
                         )}
                       >
-                        {invoice.status}
+                        {formatStatusText(invoice.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm text-center">
@@ -242,7 +287,8 @@ function PaidInvoicesTab() {
                       </TooltipProvider>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             )}
           </Table>
@@ -276,6 +322,44 @@ function UpcomingInvoicesTab() {
     }
   };
 
+  // Helper to render line items if available
+  const renderLineItems = (invoice: any) => {
+    // Check for line items from Stripe (lines.data array)
+    const lineItems = invoice.lines?.data || invoice.lineItems || invoice.line_items;
+
+    if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
+      return (
+        <ul className="list-disc list-inside space-y-0.5">
+          {lineItems.map((item: any, idx: number) => (
+            <li key={idx} className="text-muted-foreground">
+              <span>{item.description || item.name || 'Item'}</span>
+              {item.amount !== undefined && (
+                <span className="text-xs ml-1">
+                  (${(item.amount / 100).toFixed(2)})
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    // Fall back to comma-separated description string
+    if (invoice.description) {
+      return (
+        <ul className="list-disc list-inside space-y-0.5">
+          {invoice.description.split(',').filter((item: string) => item.trim()).map((item: string, idx: number) => (
+            <li key={idx} className="text-muted-foreground">
+              {item.trim()}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    return <span className="text-muted-foreground">—</span>;
+  };
+
   return (
     <div className="space-y-4">
       <Card className="overflow-hidden">
@@ -289,18 +373,19 @@ function UpcomingInvoicesTab() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead className="text-xs sm:text-sm font-semibold">Created At</TableHead>
+                <TableHead className="text-xs sm:text-sm font-semibold">Billing Period</TableHead>
                 <TableHead className="text-xs sm:text-sm font-semibold">Description</TableHead>
+                <TableHead className="text-xs sm:text-sm font-semibold">Subtotal</TableHead>
                 <TableHead className="text-xs sm:text-sm font-semibold">Total Due</TableHead>
                 <TableHead className="text-xs sm:text-sm font-semibold">Status</TableHead>
               </TableRow>
             </TableHeader>
             {isLoading || isRefreshing ? (
-              <TableLoadingSkeleton rows={3} columns={4} />
+              <TableLoadingSkeleton rows={3} columns={5} />
             ) : invoicesArray.length === 0 ? (
               <TableBody>
                 <TableRow>
-                  <TableCell colSpan={4} className="h-32 text-center">
+                  <TableCell colSpan={5} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <Clock className="h-10 w-10 text-muted-foreground mb-2" />
                       <p className="text-muted-foreground">No upcoming invoices</p>
@@ -310,44 +395,71 @@ function UpcomingInvoicesTab() {
               </TableBody>
             ) : (
               <TableBody>
-                {invoicesArray.map((invoice: any, index: number) => (
-                  <TableRow key={invoice.id || index} className="hover:bg-muted/30">
-                    <TableCell className="text-xs sm:text-sm">
-                      <div className="flex flex-col">
-                        <span className="font-medium">{formatDate(invoice.createdAt || invoice.period_end)}</span>
-                        <span className="text-xs text-muted-foreground">{formatTime(invoice.createdAt || invoice.period_end)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      {invoice.description ? (
-                        <ul className="list-disc list-inside space-y-0.5">
-                          {invoice.description.split(',').filter((item: string) => item.trim()).map((item: string, idx: number) => (
-                            <li key={idx} className="text-muted-foreground">
-                              {item.trim()}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm font-medium">
-                      ${(invoice.costDue || (invoice.amount_due || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      <Badge
-                        variant={getStatusVariant(invoice.status)}
-                        className={cn(
-                          invoice.status === 'paid' && 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100',
-                          invoice.status === 'open' && 'bg-amber-100 text-amber-700 hover:bg-amber-100',
-                          invoice.status === 'draft' && 'bg-gray-100 text-gray-700 hover:bg-gray-100'
+                {invoicesArray.map((invoice: any, index: number) => {
+                  // Calculate amounts - handle both raw Stripe format (cents) and pre-formatted
+                  const subtotal = invoice.subtotal !== undefined
+                    ? (typeof invoice.subtotal === 'number' && invoice.subtotal > 100 ? invoice.subtotal / 100 : invoice.subtotal)
+                    : null;
+                  const total = invoice.costDue !== undefined
+                    ? invoice.costDue
+                    : invoice.total !== undefined
+                      ? (typeof invoice.total === 'number' && invoice.total > 100 ? invoice.total / 100 : invoice.total)
+                      : invoice.amount_due !== undefined
+                        ? invoice.amount_due / 100
+                        : 0;
+                  const hasDiscount = invoice.discount || (subtotal !== null && subtotal > total);
+
+                  return (
+                    <TableRow key={invoice.id || index} className="hover:bg-muted/30">
+                      <TableCell className="text-xs sm:text-sm">
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {formatDate(invoice.period_start || invoice.createdAt)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            to {formatDate(invoice.period_end || invoice.nextPaymentAttempt)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm max-w-xs">
+                        {renderLineItems(invoice)}
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm">
+                        {subtotal !== null ? (
+                          <span className={cn(hasDiscount && "line-through text-muted-foreground")}>
+                            ${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
                         )}
-                      >
-                        {invoice.status || 'Upcoming'}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        {hasDiscount && invoice.discount && (
+                          <div className="text-xs text-success">
+                            {invoice.discount.coupon?.percent_off
+                              ? `${invoice.discount.coupon.percent_off}% off`
+                              : invoice.discount.coupon?.amount_off
+                                ? `$${(invoice.discount.coupon.amount_off / 100).toFixed(2)} off`
+                                : 'Discount applied'}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm font-medium">
+                        ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm">
+                        <Badge
+                          variant={getStatusVariant(invoice.status)}
+                          className={cn(
+                            (invoice.status?.toLowerCase() === 'paid' || invoice.status?.toLowerCase() === 'succeeded') && 'bg-success/10 text-success hover:bg-success/10',
+                            (invoice.status?.toLowerCase() === 'refund' || invoice.status?.toLowerCase() === 'refunded') && 'bg-destructive/10 text-destructive hover:bg-destructive/10',
+                            invoice.status?.toLowerCase() === 'draft' && 'bg-muted text-muted-foreground hover:bg-muted'
+                          )}
+                        >
+                          {formatStatusText(invoice.status)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             )}
           </Table>
@@ -418,7 +530,9 @@ function ReceiptsTab() {
               </TableBody>
             ) : (
               <TableBody>
-                {receiptsArray.map((receipt: any) => (
+                {receiptsArray.map((receipt: any) => {
+                  const isRefund = isRefundInvoice(receipt);
+                  return (
                   <TableRow key={receipt.id} className="hover:bg-muted/30">
                     <TableCell className="text-xs sm:text-sm">
                       <div className="flex flex-col">
@@ -436,13 +550,13 @@ function ReceiptsTab() {
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm">
                       <Badge
-                        variant={getStatusVariant(receipt.status)}
+                        variant={isRefund ? 'destructive' : getStatusVariant(receipt.status)}
                         className={cn(
-                          receipt.status === 'succeeded' && 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100',
-                          receipt.status === 'open' && 'bg-amber-100 text-amber-700 hover:bg-amber-100'
+                          !isRefund && (receipt.status?.toLowerCase() === 'paid' || receipt.status?.toLowerCase() === 'succeeded') && 'bg-success/10 text-success hover:bg-success/10',
+                          isRefund && 'bg-destructive/10 text-destructive hover:bg-destructive/10'
                         )}
                       >
-                        {receipt.status}
+                        {formatStatusText(receipt.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm text-right">
@@ -465,7 +579,8 @@ function ReceiptsTab() {
                       </TooltipProvider>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             )}
           </Table>

@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -71,6 +72,7 @@ import { getAllConfigurations } from "@/actions/configurations";
 import { formatKeyName } from "@/lib/format-key";
 
 export default function ContactsListPage() {
+  const location = useLocation();
   const [contacts, setContacts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -94,6 +96,7 @@ export default function ContactsListPage() {
   const [openExportDialog, setOpenExportDialog] = useState(false);
   const [openFinalizeDialog, setOpenFinalizeDialog] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [highlightedContactId, setHighlightedContactId] = useState<string | null>(null);
 
   const { user, checkUserSession } = useAuthContext();
   const isContactFinalized = user?.company?.isContactFinalize;
@@ -105,6 +108,49 @@ export default function ContactsListPage() {
   const { ComplaintUsersCount } = getComplaintUsersCount();
 
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Handle selected contact from navigation state (from Segment Contacts dialog)
+  useEffect(() => {
+    const state = location.state as { selectedContact?: any } | null;
+    if (state?.selectedContact) {
+      const contact = state.selectedContact;
+      const contactEmail = contact.email;
+
+      // Set search filter to find this specific contact by email
+      if (contactEmail) {
+        setSearchFilters([{
+          id: Date.now().toString(),
+          filterKey: "email",
+          filterValues: [contactEmail],
+          valuesData: [],
+        }]);
+      } else {
+        // Try to find email field with different key names
+        const emailKey = Object.keys(contact).find(k =>
+          k.toLowerCase().includes('email')
+        );
+        if (emailKey && contact[emailKey]) {
+          setSearchFilters([{
+            id: Date.now().toString(),
+            filterKey: emailKey,
+            filterValues: [contact[emailKey]],
+            valuesData: [],
+          }]);
+        }
+      }
+
+      // Set highlighted contact ID for visual feedback
+      setHighlightedContactId(contact._id);
+
+      // Clear the state to prevent re-selecting on refresh
+      window.history.replaceState({}, document.title);
+
+      // Remove highlight after 5 seconds
+      setTimeout(() => {
+        setHighlightedContactId(null);
+      }, 5000);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     fetchContacts();
@@ -463,6 +509,7 @@ export default function ContactsListPage() {
                         contact={contact}
                         visibleKeys={visibleKeys}
                         isSelected={selectedContacts.includes(contact._id)}
+                        isHighlighted={highlightedContactId === contact._id}
                         onSelect={(checked) =>
                           handleSelectContact(contact._id, checked)
                         }
@@ -696,6 +743,7 @@ export default function ContactsListPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

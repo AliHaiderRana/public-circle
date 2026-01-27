@@ -20,7 +20,7 @@ export function getAllSegments() {
 
   const memoizedValue = useMemo(
     () => ({
-      allsegments: data?.data || [],
+      allSegments: data?.data || [],
       isLoading: !data,
     }),
     [data]
@@ -142,11 +142,13 @@ export async function getSegmentFilterCount(segmentId: string) {
 }
 
 // Get segment contacts
-export async function getSegmentContacts(segmentId: string, pageNumber = 1, pageSize = 10) {
+export async function getSegmentContacts(segmentIds: string[], pageNumber = 1, pageSize = 10) {
   try {
-    const response = await axios.get(
-      `${endpoints.segments?.segments || '/segments'}/${segmentId}/contacts?pageNumber=${pageNumber}&pageSize=${pageSize}`
-    );
+    const response = await axios.post('/company-contacts/get-segment-contacts', {
+      segmentIds,
+      pageNumber,
+      pageSize,
+    });
     return response;
   } catch (error: any) {
     console.error('Error fetching segment contacts:', error);

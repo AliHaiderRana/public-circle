@@ -282,24 +282,24 @@ export function FileAttachmentSection({
           className={cn(
             'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
             isDragActive
-              ? 'border-primary bg-primary/5'
-              : 'border-muted-foreground/25 hover:border-primary hover:bg-primary/5',
+              ? 'border-sidebar-primary bg-sidebar-primary/5'
+              : 'border-muted-foreground/25 hover:border-sidebar-primary hover:bg-sidebar-primary/5',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
         >
-          <Upload className={cn('h-12 w-12 mx-auto mb-4', isDragActive ? 'text-primary' : 'text-muted-foreground')} />
+          <Upload className="h-12 w-12 mx-auto mb-4 text-sidebar-primary" />
           <p className="text-sm font-medium mb-1">
             {hasUploadingFiles ? 'Uploading files...' : 'Drop files here or click to select'}
           </p>
           {hasUploadingFiles && (
-            <p className="text-xs text-primary mb-2">Please wait for all files to upload before proceeding</p>
+            <p className="text-xs text-sidebar-primary mb-2">Please wait for all files to upload before proceeding</p>
           )}
           <p className="text-xs text-muted-foreground">
             Maximum {maxFiles} files • Max 5MB per file
           </p>
           {hasUploadingFiles && (
             <div className="mt-4">
-              <Loader2 className="h-5 w-5 animate-spin mx-auto text-primary" />
+              <Loader2 className="h-5 w-5 animate-spin mx-auto text-sidebar-primary" />
             </div>
           )}
         </div>

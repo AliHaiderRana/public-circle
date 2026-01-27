@@ -474,3 +474,23 @@ export function getDefaultPaymentMethod() {
 
   return memoizedValue;
 }
+
+// ----------------------------------------------------------------------
+// Customer Requests (for Dedicated IP status)
+
+export function getCustomerRequests() {
+  const url = '/company-contacts/customer-requests';
+
+  const { data, error, isLoading } = useSWR(url, fetcher, swrOptions);
+
+  const memoizedValue = useMemo(
+    () => ({
+      customerRequests: data?.data || [],
+      isLoading,
+      error,
+    }),
+    [data, isLoading, error]
+  );
+
+  return memoizedValue;
+}

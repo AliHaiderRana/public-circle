@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { CONDITIONS, DURATION_UNITS } from '@/lib/segment-constants';
 import type { Filter, SegmentFilter, FilterCondition, MatchType } from '@/types/segment';
 
@@ -301,6 +301,7 @@ export function ConditionBuilder({
           Add Condition
         </Button>
         <Button type="button" onClick={handleApply} disabled={isLoading}>
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isLoading ? 'Applying...' : existingGroup ? 'Update' : 'Apply'}
         </Button>
       </div>

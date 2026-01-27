@@ -18,10 +18,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, RefreshCw, Edit, Trash2, Tag, Type, List, Calendar } from 'lucide-react';
+import { Plus, RefreshCw, Edit, Trash2, Tag, Type, List, Calendar, Loader2 } from 'lucide-react';
 import { paths } from '@/routes/paths';
 import { getPaginatedFilters, deleteFilter } from '@/actions/filters';
 import { toast } from 'sonner';
+
+// Map filter type values to display names
+const FILTER_TYPE_LABELS: Record<string, string> = {
+  INPUT: 'Input',
+  RADIO: 'Radio Buttons',
+  DROP_DOWN: 'DropDown',
+  CHECK_BOX: 'Check Boxes',
+};
+
+const getFilterTypeLabel = (filterType: string): string => {
+  return FILTER_TYPE_LABELS[filterType] || filterType;
+};
 
 export default function FiltersPage() {
   const navigate = useNavigate();
@@ -32,6 +44,7 @@ export default function FiltersPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filterToDelete, setFilterToDelete] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchFilters();
@@ -54,6 +67,7 @@ export default function FiltersPage() {
 
   const handleDelete = async () => {
     if (!filterToDelete) return;
+    setIsDeleting(true);
     try {
       const res = await deleteFilter(filterToDelete._id);
       if (res?.status === 200) {
@@ -63,6 +77,7 @@ export default function FiltersPage() {
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to delete filter');
     } finally {
+      setIsDeleting(false);
       setIsDeleteDialogOpen(false);
       setFilterToDelete(null);
     }
@@ -121,8 +136,8 @@ export default function FiltersPage() {
                 <TableBody>
                   {filters.map((filter) => (
                     <TableRow key={filter._id}>
-                      <TableCell className="font-medium">{filter.filterKey}</TableCell>
-                      <TableCell>{filter.filterType}</TableCell>
+                      <TableCell className="font-medium">{filter.filterLabel || filter.filterKey}</TableCell>
+                      <TableCell>{getFilterTypeLabel(filter.filterType)}</TableCell>
                       <TableCell>
                         {filter.filterValueCount === 0
                           ? '---'
@@ -171,7 +186,7 @@ export default function FiltersPage() {
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                           <h3 className="font-semibold text-base truncate">
-                            {filter.filterKey}
+                            {filter.filterLabel || filter.filterKey}
                           </h3>
                         </div>
                         <div className="flex gap-1 flex-shrink-0 ml-2">
@@ -204,7 +219,7 @@ export default function FiltersPage() {
                         <div className="flex items-center gap-2 text-sm">
                           <Type className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           <span className="text-muted-foreground">Type:</span>
-                          <span className="font-medium">{filter.filterType}</span>
+                          <span className="font-medium">{getFilterTypeLabel(filter.filterType)}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <List className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -239,11 +254,12 @@ export default function FiltersPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>

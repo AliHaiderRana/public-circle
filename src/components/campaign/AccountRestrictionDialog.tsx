@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,8 @@ export function AccountRestrictionDialog({
   message,
   onUpgrade,
 }: AccountRestrictionDialogProps) {
+  const navigate = useNavigate();
+
   const getTitle = () => {
     switch (restrictionType) {
       case 'bandwidth':
@@ -58,12 +61,12 @@ export function AccountRestrictionDialog({
     }
   };
 
-  const handleUpgrade = () => {
+  const handleTopup = () => {
     if (onUpgrade) {
       onUpgrade();
     } else {
-      // Navigate to pricing/upgrade page if available
-      window.location.href = paths.pricing || '/dashboard';
+      // Navigate to subscription page with overage tab open
+      navigate(paths.dashboard.general.subscription, { state: { isTopUp: true } });
     }
     onOpenChange(false);
   };
@@ -85,9 +88,9 @@ export function AccountRestrictionDialog({
             Close
           </Button>
           {(restrictionType === 'bandwidth' || restrictionType === 'email') && (
-            <Button onClick={handleUpgrade}>
+            <Button onClick={handleTopup}>
               <ExternalLink className="h-4 w-4 mr-2" />
-              Upgrade Plan
+              New Topup
             </Button>
           )}
         </DialogFooter>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,10 +15,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { Badge } from '@/components/ui/badge';
 import { LoadingState } from '@/components/ui/loading-state';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import {
   getSegmentById,
   createSegment,
@@ -49,7 +48,7 @@ export default function SegmentNewPage() {
   const [selectedGroups, setSelectedGroups] = useState<SegmentFilter[]>([]);
   const [totalCount, setTotalCount] = useState(0);
 
-  const { allFilters } = getAllFilters();
+  const { allFilters, isLoading: filtersLoading } = getAllFilters();
   const initialSegment = (location.state as any)?.segment;
 
   const {
@@ -170,8 +169,8 @@ export default function SegmentNewPage() {
     navigate(paths.dashboard.audience?.segments || '/dashboard/audience/segments');
   };
 
-  if (isLoading) {
-    return <LoadingState />;
+  if (isLoading || (isEditMode && filtersLoading)) {
+    return <LoadingState message="Loading segment data..." />;
   }
 
   return (
@@ -285,7 +284,11 @@ export default function SegmentNewPage() {
             Cancel
           </Button>
           <Button type="submit" disabled={isSaving || selectedGroups.length === 0}>
-            <Save className="mr-2 h-4 w-4" />
+            {isSaving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
             {isSaving ? 'Saving...' : isEditMode ? 'Update Segment' : 'Create Segment'}
           </Button>
         </div>

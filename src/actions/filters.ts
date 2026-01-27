@@ -82,13 +82,15 @@ export function getFilterValues(key: string) {
 export function getAllFilters() {
   const url = `${endpoints.filters.filters}/all`;
 
-  const { data } = useSWR(url, fetcher, swrOptions);
+  const { data, isLoading, error } = useSWR(url, fetcher, swrOptions);
 
   const memoizedValue = useMemo(
     () => ({
-      allFilters: data?.data,
+      allFilters: data?.data || [],
+      isLoading,
+      error,
     }),
-    [data]
+    [data, isLoading, error]
   );
 
   return memoizedValue;
@@ -133,6 +135,48 @@ export async function getVerifiedEmails() {
     return response;
   } catch (error: any) {
     console.error('Error fetching verified emails:', error);
+    return null;
+  }
+}
+
+export async function getFilterDataTypes(params: { filterKey: string }) {
+  try {
+    const response = await axios.post('/filters/get-data-type', params);
+    return response;
+  } catch (error: any) {
+    console.error('Error fetching filter data types:', error);
+    toast.error(error?.message || 'Failed to fetch data types');
+    return null;
+  }
+}
+
+export async function getFilterById(id: string) {
+  try {
+    const response = await axios.get(`${endpoints.filters.filters}/${id}`);
+    return response;
+  } catch (error: any) {
+    console.error('Error fetching filter:', error);
+    toast.error(error?.message || 'Failed to fetch filter');
+    return null;
+  }
+}
+
+export async function getFilterValuesWithPagination(
+  key: string,
+  pageNumber: number = 1,
+  pageSize: number = 50,
+  filterId?: string,
+  searchString?: string
+) {
+  try {
+    let url = `${endpoints.filters.filterValues}?key=${key}&pageNumber=${pageNumber}&pageSize=${pageSize}`;
+    if (filterId) url += `&filterId=${filterId}`;
+    if (searchString) url += `&searchString=${searchString}`;
+    const response = await axios.get(url);
+    return response;
+  } catch (error: any) {
+    console.error('Error fetching filter values:', error);
+    toast.error(error?.message || 'Failed to fetch filter values');
     return null;
   }
 }

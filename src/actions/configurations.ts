@@ -5,12 +5,12 @@ import { toast } from 'sonner';
 
 // ----------------------------------------------------------------------
 
-const enableServer = true;
-
 const swrOptions = {
-  revalidateIfStale: enableServer,
-  revalidateOnFocus: enableServer,
-  revalidateOnReconnect: enableServer,
+  revalidateIfStale: true,
+  revalidateOnFocus: true,
+  revalidateOnReconnect: true,
+  dedupingInterval: 10000, // 10 seconds - prevents duplicate requests within this window
+  focusThrottleInterval: 30000, // 30 seconds - throttle focus revalidation
 };
 
 // ----------------------------------------------------------------------
@@ -18,12 +18,12 @@ const swrOptions = {
 export function getAllConfigurations() {
   const url = endpoints.configurations.configuration;
 
-  const { data } = useSWR(url, fetcher, swrOptions);
+  const { data, error, isLoading } = useSWR(url, fetcher, swrOptions);
 
   const memoizedValue = useMemo(
     () => {
       const emailConfigurations = data?.data?.emailConfigurations;
-      
+
       // Check if all addresses and active domain addresses have Apple Relay verified
       const appleRelayVerified =
         emailConfigurations?.addresses?.every(
@@ -38,13 +38,16 @@ export function getAllConfigurations() {
           );
         });
 
+      // isLoading is only true on first load when there's no data yet
+      // Subsequent revalidations won't show loading state
       return {
         allConfigurations: emailConfigurations,
-        isLoading: !data,
+        isLoading: isLoading && !data,
+        error,
         appleRelayVerified: appleRelayVerified ?? false,
       };
     },
-    [data]
+    [data, error, isLoading]
   );
 
   return memoizedValue;
@@ -107,14 +110,16 @@ export async function checkVerificationStatus() {
 export function getAllVerifiedEmails() {
   const url = endpoints.configurations.verifiedEmails;
 
-  const { data } = useSWR(url, fetcher, swrOptions);
+  const { data, error, isLoading } = useSWR(url, fetcher, swrOptions);
 
   const memoizedValue = useMemo(
     () => ({
       verifiedEmails: data?.data || [],
-      isLoading: !data,
+      // isLoading only true on first load, not on revalidation
+      isLoading: isLoading && !data,
+      error,
     }),
-    [data]
+    [data, error, isLoading]
   );
 
   return memoizedValue;

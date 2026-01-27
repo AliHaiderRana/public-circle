@@ -27,9 +27,12 @@ export function Logo({
     height: height ?? (isSingle ? 40 : 36),
   };
 
+  // Use different logo images based on isSingle prop
+  const logoSrc = isSingle ? "/logo/logo-single.png" : "/logo/PCLogo.png";
+
   const logoContent = (
     <img
-      src="/logo/PCLogo.png"
+      src={logoSrc}
       alt="Public Circle"
       className="h-full w-auto object-contain"
       style={{ width: baseSize.width, height: baseSize.height }}

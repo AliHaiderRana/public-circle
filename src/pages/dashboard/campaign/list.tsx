@@ -44,7 +44,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Eye,
   Edit,
   Play,
   Pause,
@@ -549,36 +548,8 @@ export default function CampaignListPage() {
               />
             </div>
             
-            {/* Quick Status Filters */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted-foreground mr-1">Quick filters:</span>
-              {statusOptions.filter(opt => opt.value !== 'all').map((option) => (
-                <Badge
-                  key={option.value}
-                  variant={statusFilter === option.value ? 'default' : 'outline'}
-                  className="cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => handleStatusFilterChange(option.value)}
-                >
-                  {option.label}
-                </Badge>
-              ))}
-            </div>
-
-            {/* Advanced Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-2 border-t">
-              <div className="flex flex-col sm:flex-row gap-2 flex-1">
-                <Select
-                  value={archiveFilter}
-                  onValueChange={(value) => handleArchiveFilterChange(value as 'active' | 'archived')}
-                >
-                  <SelectTrigger className="w-full sm:w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-2">
                 <Select
                   value={statusFilter}
                   onValueChange={(value) => handleStatusFilterChange(value as CampaignStatus)}
@@ -648,7 +619,6 @@ export default function CampaignListPage() {
                     </div>
                   </PopoverContent>
                 </Popover>
-              </div>
             </div>
           </div>
         </CardContent>
@@ -805,7 +775,7 @@ export default function CampaignListPage() {
                           {getSortIcon('updatedAt')}
                         </div>
                       </TableHead>
-                      <TableHead className="w-auto sm:w-[200px]">Actions</TableHead>
+                      <TableHead className="w-auto sm:w-[200px] text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -914,7 +884,7 @@ export default function CampaignListPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center justify-center gap-1">
                             {campaign.status !== 'ARCHIVED' && (
                               <>
                                 <TooltipProvider>
@@ -1033,21 +1003,6 @@ export default function CampaignListPage() {
                                 <TooltipContent>
                                   {campaign.status === 'ARCHIVED' ? 'Unarchive' : 'Archive'} Campaign
                                 </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => navigate(paths.dashboard.campaign.details(campaign._id))}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>View Details</TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                             <TooltipProvider>

@@ -12,7 +12,8 @@ import { useAuthContext } from './use-auth-context';
  */
 export function useHasPermission(requiredRoles: string[]): boolean {
   const { user } = useAuthContext();
-  const userRole = user?.role?.name || '';
+  // Handle both string role and object role with name property
+  const userRole = typeof user?.role === 'string' ? user.role : (user?.role?.name || '');
 
   if (!requiredRoles || requiredRoles.length === 0) {
     return true; // No restrictions, allow access
@@ -36,7 +37,8 @@ export function useIsAdmin(): boolean {
  */
 export function useHasAnyRole(roles: string[]): boolean {
   const { user } = useAuthContext();
-  const userRole = user?.role?.name || '';
+  // Handle both string role and object role with name property
+  const userRole = typeof user?.role === 'string' ? user.role : (user?.role?.name || '');
 
   return roles.includes(userRole);
 }

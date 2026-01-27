@@ -22,9 +22,9 @@ import { SesStatusDialog } from '@/components/ses-status/ses-status-dialog';
 import { SubscriptionHeaderBanner } from '@/components/subscription/subscription-header-banner';
 import { RegionSelector } from '@/components/auth/region-selector';
 import { LanguageSelector } from '@/components/auth/language-selector';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { CompanyLogo } from '@/components/company-logo';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export function DashboardHeader() {
   const { user, checkUserSession } = useAuthContext();
@@ -61,10 +61,31 @@ export function DashboardHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 w-full items-center justify-between px-3 sm:px-4" style={{ maxWidth: '1400px' }}>
-        {/* Sidebar Toggle */}
+        {/* Left side - Mobile menu trigger and Company Logo */}
         <div className="flex items-center gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
+          {/* Mobile sidebar trigger */}
+          <SidebarTrigger className="sm:hidden" />
+
+          {/* Company Logo and Name */}
+          {user?.company && (
+            <CompanyLogo
+              logo={user.company.logo}
+              name={user.company.name}
+              size="sm"
+              showName={false}
+              className="flex-shrink-0 sm:hidden"
+            />
+          )}
+          {/* Company Logo with name on larger screens */}
+          {user?.company && (
+            <CompanyLogo
+              logo={user.company.logo}
+              name={user.company.name}
+              size="sm"
+              showName={true}
+              className="flex-shrink-0 hidden sm:flex"
+            />
+          )}
         </div>
 
         {/* Spacer to push everything to the right */}
@@ -74,21 +95,21 @@ export function DashboardHeader() {
         <SubscriptionHeaderBanner className="mr-4 hidden sm:block" />
 
         {/* Right side actions */}
-        <div className="flex items-center gap-2">
-          {/* SES Status Indicator */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* SES Status Indicator - hidden on mobile */}
           {user?.company && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-2"
+              className="h-8 px-2 hidden sm:flex"
               onClick={() => setSesStatusDialogOpen(true)}
             >
               <SesStatusBadge user={user} />
             </Button>
           )}
 
-          {/* Currency and Language Selectors */}
-          <div className="flex items-center gap-0.5">
+          {/* Currency and Language Selectors - hidden on mobile */}
+          <div className="hidden sm:flex items-center gap-0.5">
             <RegionSelector disabled />
             <LanguageSelector />
           </div>

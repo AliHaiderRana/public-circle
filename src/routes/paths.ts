@@ -52,8 +52,8 @@ export const paths = {
       list: `${ROOTS.DASHBOARD}/campaign/list`,
       new: `${ROOTS.DASHBOARD}/campaign/new`,
       recurring: `${ROOTS.DASHBOARD}/campaign/recurring`,
-      details: (id: string) => `${ROOTS.DASHBOARD}/campaign/${id}`,
       edit: (id: string) => `${ROOTS.DASHBOARD}/campaign/edit/${id}`,
+      details: (id: string) => `${ROOTS.DASHBOARD}/campaign/${id}`,
     },
 
     // Template routes
@@ -96,6 +96,7 @@ export const paths = {
       contactsImport: `${ROOTS.DASHBOARD}/configurations/contacts/import`,
       emailConfiguration: `${ROOTS.DASHBOARD}/configurations/emailConfiguration`,
       newEmail: `${ROOTS.DASHBOARD}/configurations/newEmail`,
+      domainEmails: (domain: string) => `${ROOTS.DASHBOARD}/configurations/domain-emails?domain=${domain}`,
       webhooks: `${ROOTS.DASHBOARD}/configurations/webhooks`,
       roles: `${ROOTS.DASHBOARD}/configurations/roles&members`,
       // Legacy paths for backward compatibility

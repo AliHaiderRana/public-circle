@@ -23,6 +23,7 @@ interface ContactTableRowProps {
   contact: any;
   visibleKeys: string[];
   isSelected: boolean;
+  isHighlighted?: boolean;
   onSelect: (checked: boolean) => void;
   onDelete: () => void;
   onEdit: (contact: any) => void;
@@ -33,6 +34,7 @@ export function ContactTableRow({
   contact,
   visibleKeys,
   isSelected,
+  isHighlighted = false,
   onSelect,
   onDelete,
   onEdit,
@@ -89,9 +91,9 @@ export function ContactTableRow({
     <TableRow
       className={cn(
         'transition-colors cursor-pointer',
-        isSelected
-          ? 'bg-primary/5 hover:bg-primary/10 border-l-2 border-l-primary'
-          : 'hover:bg-muted/50'
+        isHighlighted && 'animate-pulse bg-primary/20 border-l-4 border-l-primary',
+        isSelected && !isHighlighted && 'bg-primary/5 hover:bg-primary/10 border-l-2 border-l-primary',
+        !isSelected && !isHighlighted && 'hover:bg-muted/50'
       )}
     >
       <TableCell className="w-12">
