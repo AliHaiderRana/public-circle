@@ -143,26 +143,15 @@ function PlanSelectionCarousel() {
   useEffect(() => {
     if (savedCodeFetched) return;
 
-    // If user has saved referral code, verify it
+    // If user has saved referral code, just use it without re-verifying
+    // Re-verification can cause "Too many invalid attempts" errors
     if (savedReferralCode) {
-      (async () => {
-        try {
-          const res = await verifyReferalCode({ referralCode: savedReferralCode });
-          if (res?.status === 200 && res?.data?.data) {
-            setSavedRewardInfo(res.data.data);
-            setVerifiedCoupon(savedReferralCode);
-            setRewardInfo(res.data.data);
-            setReferralCode(savedReferralCode);
-            setCodeVerificationStatus('success');
-          }
-        } catch {
-          setVerifiedCoupon(savedReferralCode);
-          setReferralCode(savedReferralCode);
-          setSavedRewardInfo(null);
-        } finally {
-          setSavedCodeFetched(true);
-        }
-      })();
+      // Trust the saved code - it was already verified during signup
+      setVerifiedCoupon(savedReferralCode);
+      setReferralCode(savedReferralCode);
+      setCodeVerificationStatus('success');
+      setSavedCodeFetched(true);
+      return;
     }
     // If no saved code but subscription has a discount, show it
     else if (activeSubscriptionDiscount) {
