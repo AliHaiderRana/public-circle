@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuthContext } from '@/auth/hooks/use-auth-context';
-import { signOut } from '@/auth/actions/auth';
-import { resetTour } from '@/actions/users';
-import { toast } from 'sonner';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useState, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuthContext } from "@/auth/hooks/use-auth-context";
+import { signOut } from "@/auth/actions/auth";
+import { resetTour } from "@/actions/users";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,19 +12,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
-import { accountMenuItems } from './nav-data';
-import { NotificationsDropdown } from '@/components/notifications-dropdown';
-import { SesStatusBadge } from '@/components/ses-status/ses-status-badge';
-import { SesStatusDialog } from '@/components/ses-status/ses-status-dialog';
-import { SubscriptionHeaderBanner } from '@/components/subscription/subscription-header-banner';
-import { RegionSelector } from '@/components/auth/region-selector';
-import { LanguageSelector } from '@/components/auth/language-selector';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { CompanyLogo } from '@/components/company-logo';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
+import { accountMenuItems } from "./nav-data";
+import { NotificationsDropdown } from "@/components/notifications-dropdown";
+import { SesStatusBadge } from "@/components/ses-status/ses-status-badge";
+import { SesStatusDialog } from "@/components/ses-status/ses-status-dialog";
+import { SubscriptionHeaderBanner } from "@/components/subscription/subscription-header-banner";
+import { RegionSelector } from "@/components/auth/region-selector";
+import { LanguageSelector } from "@/components/auth/language-selector";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { CompanyLogo } from "@/components/company-logo";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function DashboardHeader() {
   const { user, checkUserSession } = useAuthContext();
@@ -34,33 +34,42 @@ export function DashboardHeader() {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth/jwt/sign-in');
+    navigate("/auth/jwt/sign-in");
   };
 
   const handleClickTour = useCallback(async () => {
     try {
       const res = await resetTour();
       if (res) {
-        toast.success('Tour reset successfully');
+        toast.success("Tour reset successfully");
         await checkUserSession?.();
       }
     } catch (error) {
-      console.error('Error resetting tour:', error);
+      console.error("Error resetting tour:", error);
     }
   }, [checkUserSession]);
 
   const userInitials = user
-    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase()
-    : 'U';
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
+    : "U";
+
+  // Add cache-busting for profile picture
+  const profilePictureUrl = user?.profilePicture || user?.photoURL;
+  const avatarSrc = profilePictureUrl
+    ? `${profilePictureUrl}?t=${user?.updatedAt || ""}`
+    : undefined;
 
   const filteredMenuItems = accountMenuItems.filter((item) => {
     if (!item.roles) return true;
-    return item.roles.includes(user?.role?.name || '');
+    return item.roles.includes(user?.role?.name || "");
   });
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto flex h-16 w-full items-center justify-between px-3 sm:px-4" style={{ maxWidth: '1400px' }}>
+    <header className="sticky top-0 z-30 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div
+        className="mx-auto flex h-16 w-full items-center justify-between px-3 sm:px-4"
+        style={{ maxWidth: "1400px" }}
+      >
         {/* Left side - Mobile menu trigger and Company Logo */}
         <div className="flex items-center gap-2">
           {/* Mobile sidebar trigger */}
@@ -123,9 +132,12 @@ export function DashboardHeader() {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full"
+              >
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user?.photoURL} alt={user?.firstName} />
+                  <AvatarImage src={avatarSrc} alt={user?.firstName} />
                   <AvatarFallback>{userInitials}</AvatarFallback>
                 </Avatar>
               </Button>
@@ -162,7 +174,10 @@ export function DashboardHeader() {
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+              <DropdownMenuItem
+                onClick={handleSignOut}
+                className="text-destructive"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
               </DropdownMenuItem>

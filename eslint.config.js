@@ -26,4 +26,4 @@ export default defineConfig([
       'no-undef': 'off', // TypeScript handles this
     },
   },
-])
+]);
