@@ -15,6 +15,7 @@ import { Bell, CheckCheck, Loader2, Flag } from "lucide-react";
 import {
   getNotifications,
   markNotificationAsRead,
+  markNotificationAsUnread,
   markAllNotificationsAsRead,
 } from "@/actions/notifications";
 import { getSocket } from "@/lib/socket";
@@ -210,6 +211,21 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
     }
   };
 
+  const handleMarkAsUnread = async (notificationId: string) => {
+    try {
+      await markNotificationAsUnread(notificationId);
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n._id === notificationId ? { ...n, isRead: false } : n,
+        ),
+      );
+      setUnreadCount((prev) => prev + 1);
+    } catch (error) {
+      console.error("Error marking notification as unread:", error);
+      toast.error("Failed to mark notification as unread");
+    }
+  };
+
   const handleMarkAllAsRead = async () => {
     try {
       await markAllNotificationsAsRead();
@@ -332,14 +348,7 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
           className="mt-4"
         >
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="all">
-              All
-              {notifications.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {notifications.length}
-                </Badge>
-              )}
-            </TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="unread">
               Unread
               {unreadNotifications.length > 0 && (
@@ -409,26 +418,42 @@ export function NotificationsCenter({ children }: NotificationsCenterProps) {
                             </div>
                           </div>
                         </div>
-                        {!notification.isRead && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  className="h-6 w-6 flex items-center justify-center flex-shrink-0 rounded-full hover:bg-muted transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                className={cn(
+                                  "h-6 w-6 flex items-center justify-center flex-shrink-0 rounded-full hover:bg-muted transition-colors",
+                                  notification.isRead && "opacity-0 group-hover:opacity-100",
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (notification.isRead) {
+                                    handleMarkAsUnread(notification._id);
+                                  } else {
                                     handleMarkAsRead(notification._id);
-                                  }}
-                                >
-                                  <div className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--sidebar-primary))]" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Mark as read</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
+                                  }
+                                }}
+                              >
+                                <div
+                                  className={cn(
+                                    "h-2.5 w-2.5 rounded-full",
+                                    notification.isRead
+                                      ? "border border-muted-foreground/50"
+                                      : "bg-[hsl(var(--sidebar-primary))]",
+                                  )}
+                                />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                {notification.isRead
+                                  ? "Mark as unread"
+                                  : "Mark as read"}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                   ))}

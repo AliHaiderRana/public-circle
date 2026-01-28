@@ -72,7 +72,13 @@ export default function ProfilePage() {
       const res = await updateUser(formData);
       if (res?.status === 200) {
         toast.success("Profile picture updated successfully");
-        setAvatarPreview(null);
+        // Set avatar with cache-busting timestamp
+        const newProfilePic = res?.data?.data?.profilePicture;
+        if (newProfilePic) {
+          setAvatarPreview(`${newProfilePic}?t=${Date.now()}`);
+        } else {
+          setAvatarPreview(null);
+        }
         await checkUserSession?.();
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
