@@ -27,16 +27,29 @@ export function Logo({
     height: height ?? (isSingle ? 40 : 36),
   };
 
-  // Use different logo images based on isSingle prop
-  const logoSrc = isSingle ? "/logo/logo-single.png" : "/logo/PCLogo.png";
+  // Use different logo images based on isSingle prop and theme
+  const logoSrc = isSingle
+    ? "/logo/logo-single.png"
+    : "/logo/PCLogo-withoutbg.png";
+  const logoDarkSrc = isSingle
+    ? "/logo/logo-single.png"
+    : "/logo/PCLogoWhitetext.png";
 
   const logoContent = (
-    <img
-      src={logoSrc}
-      alt="Public Circle"
-      className="h-full w-auto object-contain"
-      style={{ width: baseSize.width, height: baseSize.height }}
-    />
+    <>
+      <img
+        src={logoSrc}
+        alt="Public Circle"
+        className="h-full w-auto object-contain dark:hidden"
+        style={{ width: baseSize.width, height: baseSize.height }}
+      />
+      <img
+        src={logoDarkSrc}
+        alt="Public Circle"
+        className="h-full w-auto object-contain hidden dark:block"
+        style={{ width: baseSize.width, height: baseSize.height }}
+      />
+    </>
   );
 
   if (disableLink) {
