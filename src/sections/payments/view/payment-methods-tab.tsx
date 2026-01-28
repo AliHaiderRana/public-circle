@@ -106,21 +106,9 @@ const formatCardNumber = (last4: string) => `•••• •••• •••
 
 // ----------------------------------------------------------------------
 
-// Get gradient background based on card brand
-const getCardGradient = (brand: string) => {
-  const brandLower = brand?.toLowerCase() || "default";
-  switch (brandLower) {
-    case "visa":
-      return "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900";
-    case "mastercard":
-      return "bg-gradient-to-br from-orange-600 via-red-700 to-red-800";
-    case "amex":
-      return "bg-gradient-to-br from-gray-600 via-gray-700 to-gray-900";
-    case "discover":
-      return "bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700";
-    default:
-      return "bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800";
-  }
+// Card background
+const getCardGradient = () => {
+  return "bg-white";
 };
 
 interface PaymentMethodCardProps {
@@ -139,44 +127,40 @@ function PaymentMethodCard({
   isSettingDefault,
 }: PaymentMethodCardProps) {
   const brand = pm.card?.brand || "default";
-  const gradient = getCardGradient(brand);
+  const gradient = getCardGradient();
 
   return (
-    <Card className={`relative ${gradient} border-0 shadow-lg overflow-hidden h-[200px]`}>
+    <Card className={`relative ${gradient} border shadow-lg overflow-hidden h-[200px] rounded-2xl`}>
       <CardContent className="p-5 h-full flex flex-col">
-        {/* Card chip pattern */}
-        <div className="absolute top-4 right-4 opacity-20">
-          <div className="w-10 h-8 rounded bg-white/30" />
-        </div>
-
-        {/* Card brand icon */}
-        <div className="mb-6">
+        {/* Card brand icon and Default badge - same row */}
+        <div className="flex items-center justify-between mb-4">
           <CardBrandIcon brand={brand} />
+          {pm.isDefaultPaymentMethod && (
+            <span className="px-3 py-1 text-xs font-medium rounded-full bg-black text-white">
+              Default
+            </span>
+          )}
         </div>
 
         {/* Card number */}
-        <p className="font-mono text-xl text-white tracking-[0.2em] mb-4">
+        <p className="font-mono text-xl text-black tracking-[0.2em] mb-4">
           {formatCardNumber(pm.card?.last4 || "")}
         </p>
 
         {/* Expiry and actions */}
         <div className="flex items-end justify-between mt-auto">
           <div>
-            <p className="text-[10px] text-white/60 uppercase tracking-wider mb-0.5">
+            <p className="text-[10px] text-black/60 uppercase tracking-wider mb-0.5">
               Expires
             </p>
-            <p className="font-mono text-sm text-white">
+            <p className="font-mono text-sm text-black">
               {String(pm.card?.exp_month || "").padStart(2, "0")}/
               {String(pm.card?.exp_year || "").slice(-2)}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            {pm.isDefaultPaymentMethod ? (
-              <span className="px-3 py-1 text-xs font-medium rounded-full bg-black/40 text-white border border-white/20">
-                Default
-              </span>
-            ) : (
+            {!pm.isDefaultPaymentMethod && (
               <>
                 <Button
                   variant="secondary"
@@ -196,7 +180,7 @@ function PaymentMethodCard({
                   size="icon"
                   onClick={() => onDelete(pm.id)}
                   disabled={isDeleting || isSettingDefault}
-                  className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white"
+                  className="h-8 w-8 rounded-full bg-black/10 hover:bg-black/20 text-black"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -458,7 +442,7 @@ export function PaymentMethodsTab() {
               />
             ))}
             <Card
-              className="border-2 border-dashed border-muted-foreground/30 h-[200px] cursor-pointer hover:border-primary bg-card hover:bg-muted/30 transition-all group"
+              className="border-2 border-dashed border-muted-foreground/30 h-[200px] cursor-pointer hover:border-primary bg-card hover:bg-muted/30 transition-all group rounded-2xl"
               onClick={handleAddCard}
             >
               <CardContent className="h-full flex flex-col items-center justify-center p-6">
