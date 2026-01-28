@@ -322,8 +322,13 @@ function SidebarLogo() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <SidebarHeader className="border-b border-sidebar-border">
-      <div className={cn("flex h-14 items-center justify-start", isCollapsed ? "px-2" : "px-4")}>
+    <SidebarHeader>
+      <div
+        className={cn(
+          "flex h-14 items-center justify-start",
+          isCollapsed ? "px-2" : "px-4",
+        )}
+      >
         {isCollapsed ? (
           <Logo isSingle={true} width={28} height={28} disableLink={false} />
         ) : (
